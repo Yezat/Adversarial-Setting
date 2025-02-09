@@ -50,9 +50,8 @@ pip install uv
 uv pip install -r pyproject.toml --extra dev
 ```
 
-Install a pre-commit hook for ruff and the bump-version hook
+Install a pre-commit hook for ruff
 ```bash
 pre-commit install
-pre-commit install --hook-type post-commit
 ```
 
