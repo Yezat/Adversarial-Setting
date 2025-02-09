@@ -1,3 +1,4 @@
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
@@ -10,9 +11,8 @@ repos:
 
   - repo: local
     hooks:
-      - id: post-commit
-        name: post-commit hook
+      - id: bump version
+        name: bump version
         entry: hooks/bump-version.sh
         language: script
-        always_run: true
         stages: [post-commit]
