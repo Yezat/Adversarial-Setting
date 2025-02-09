@@ -29,6 +29,9 @@ brew install mpich
 Install an environment for execution:
 ```bash
 pip install uv
+uv venv --python 3.11
+
+source .venv/bin/activate
 uv pip install -r pyproject.toml
 ```
 
@@ -47,6 +50,9 @@ brew install mpich
 Install an environment for development:
 ```bash
 pip install uv
+uv venv --python 3.11
+
+source .venv/bin/activate
 uv pip install -r pyproject.toml --extra dev
 ```
 
@@ -55,3 +61,8 @@ Install a pre-commit hook for ruff
 pre-commit install
 ```
 
+
+Run the tests like this to see logging output
+```bash
+pytest -o log_cli=true -o log_cli_level=INFO
+```

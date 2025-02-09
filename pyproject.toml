@@ -1,7 +1,7 @@
 [project]
 name = "adversarial-setting"
 version = "0.0.5"
-requires-python = "==3.11"
+requires-python = ">=3.11"
 description = "Code for the paper 'A High Dimensional Statistical Model for Adversarial Training: Geometry and Trade-Offs'"
 readme = "README.md"
 authors = [
@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["ruff", "pre-commit"]
+dev = ["ruff", "pre-commit", "pytest"]
 docs = ["mkdocs", "mkdocstrings"]
 
 [project.urls]
