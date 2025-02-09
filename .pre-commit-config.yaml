@@ -15,4 +15,5 @@ repos:
         name: bump version
         entry: hooks/bump-version.sh
         language: script
+        always_run: true
         stages: [post-commit]
