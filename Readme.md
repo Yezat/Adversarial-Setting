@@ -34,25 +34,9 @@ uv pip install -r pyproject.toml
 
 ## How to contibute
 
-Set up hooks, edit .git/hooks/post-commit and add this code:
+Make the bump-version script executable:
 ```bash
-#!/bin/bash
-
-# Run bumpver to update the version
-bumpver update --patch
-
-# Stage the version update
-git add pyproject.toml
-
-# Amend the last commit with the new version
-git commit --amend --no-edit
-
-echo "Version bumped automatically!"
-
-```
-then make the post-commit hook executable:
-```bash
-chmod +x .git/hooks/post-commit
+chmod +x hooks/bump-version.sh
 ```
 
 Install mpi using brew
@@ -66,8 +50,9 @@ pip install uv
 uv pip install -r pyproject.toml --extra dev
 ```
 
-Install a pre-commit hook for ruff
+Install a pre-commit hook for ruff and the bump-version hook
 ```bash
 pre-commit install
+pre-commit install --hook-type post-commit
 ```
 
