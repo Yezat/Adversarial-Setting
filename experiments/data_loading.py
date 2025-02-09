@@ -144,29 +144,29 @@ def obtain_dataframes(logger, version_choice=None):
         lambda row: extract_trace(row, "sigmax_eigenvalues"), axis=1
     )
 
-    df2["sigmatheta_first_ev"] = df2.apply(
-        lambda row: extract_first_eigenvalue(row, "sigmatheta_eigenvalues"), axis=1
+    df2["sigmaθ_first_ev"] = df2.apply(
+        lambda row: extract_first_eigenvalue(row, "sigmaθ_eigenvalues"), axis=1
     )
-    df2["sigmatheta_second_ev"] = df2.apply(
-        lambda row: extract_second_eigenvalue(row, "sigmatheta_eigenvalues"), axis=1
+    df2["sigmaθ_second_ev"] = df2.apply(
+        lambda row: extract_second_eigenvalue(row, "sigmaθ_eigenvalues"), axis=1
     )
-    df2["sigmatheta_trace"] = df2.apply(
-        lambda row: extract_trace(row, "sigmatheta_eigenvalues"), axis=1
+    df2["sigmaθ_trace"] = df2.apply(
+        lambda row: extract_trace(row, "sigmaθ_eigenvalues"), axis=1
     )
 
-    df2["xtheta_first_ev"] = df2.apply(
-        lambda row: extract_first_eigenvalue(row, "xtheta_eigenvalues"), axis=1
+    df2["xθ_first_ev"] = df2.apply(
+        lambda row: extract_first_eigenvalue(row, "xθ_eigenvalues"), axis=1
     )
-    df2["xtheta_second_ev"] = df2.apply(
-        lambda row: extract_second_eigenvalue(row, "xtheta_eigenvalues"), axis=1
+    df2["xθ_second_ev"] = df2.apply(
+        lambda row: extract_second_eigenvalue(row, "xθ_eigenvalues"), axis=1
     )
-    df2["xtheta_trace"] = df2.apply(
-        lambda row: extract_trace(row, "xtheta_eigenvalues"), axis=1
+    df2["xθ_trace"] = df2.apply(
+        lambda row: extract_trace(row, "xθ_eigenvalues"), axis=1
     )
 
     # drop the original eigenvalues columns
     df2 = df2.drop(
-        columns=["sigmax_eigenvalues", "sigmatheta_eigenvalues", "xtheta_eigenvalues"]
+        columns=["sigmax_eigenvalues", "sigmaθ_eigenvalues", "xθ_eigenvalues"]
     )
 
     df_state_evolution = df2

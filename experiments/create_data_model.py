@@ -12,7 +12,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 from _version import __version__
 from experiment_information import *
-from data_model import *
+from DataModel.data_model import *
 from helpers import Task
 import logging
 
@@ -29,9 +29,9 @@ def process_data_model_definition(data_model_definition, experiment, logger):
                 source_pickle_path="../",
                 delete_existing=data_model_definition.delete_existing,
                 normalize_matrices=data_model_definition.normalize_matrices,
-                Sigma_w_content=data_model_definition.Sigma_w_content,
-                Sigma_delta_content=data_model_definition.Sigma_delta_content,
-                Sigma_upsilon_content=data_model_definition.Sigma_upsilon_content,
+                Σ_ω_content=data_model_definition.Σ_ω_content,
+                Σ_δ_content=data_model_definition.Σ_δ_content,
+                Σ_ν_content=data_model_definition.Σ_ν_content,
                 name=data_model_definition.name,
                 description=data_model_definition.description,
             )
@@ -42,9 +42,9 @@ def process_data_model_definition(data_model_definition, experiment, logger):
                 source_pickle_path="../",
                 delete_existing=data_model_definition.delete_existing,
                 normalize_matrices=data_model_definition.normalize_matrices,
-                Sigma_w_content=data_model_definition.Sigma_w_content,
-                Sigma_delta_content=data_model_definition.Sigma_delta_content,
-                Sigma_upsilon_content=data_model_definition.Sigma_upsilon_content,
+                Σ_ω_content=data_model_definition.Σ_ω_content,
+                Σ_δ_content=data_model_definition.Σ_δ_content,
+                Σ_ν_content=data_model_definition.Σ_ν_content,
                 name=data_model_definition.name,
                 description=data_model_definition.description,
             )
@@ -55,9 +55,9 @@ def process_data_model_definition(data_model_definition, experiment, logger):
                 source_pickle_path="../",
                 delete_existing=data_model_definition.delete_existing,
                 normalize_matrices=data_model_definition.normalize_matrices,
-                Sigma_w_content=data_model_definition.Sigma_w_content,
-                Sigma_delta_content=data_model_definition.Sigma_delta_content,
-                Sigma_upsilon_content=data_model_definition.Sigma_upsilon_content,
+                Σ_ω_content=data_model_definition.Σ_ω_content,
+                Σ_δ_content=data_model_definition.Σ_δ_content,
+                Σ_ν_content=data_model_definition.Σ_ν_content,
                 name=data_model_definition.name,
                 description=data_model_definition.description,
             )
@@ -69,15 +69,15 @@ def process_data_model_definition(data_model_definition, experiment, logger):
                 delete_existing=data_model_definition.delete_existing,
                 normalize_matrices=data_model_definition.normalize_matrices,
                 attack_equal_defense=data_model_definition.attack_equal_defense,
-                Sigma_w_content=data_model_definition.Sigma_w_content,
-                Sigma_delta_content=data_model_definition.Sigma_delta_content,
-                Sigma_upsilon_content=data_model_definition.Sigma_upsilon_content,
+                Σ_ω_content=data_model_definition.Σ_ω_content,
+                Σ_δ_content=data_model_definition.Σ_δ_content,
+                Σ_ν_content=data_model_definition.Σ_ν_content,
                 name=data_model_definition.name,
                 description=data_model_definition.description,
                 feature_ratios=data_model_definition.feature_ratios,
                 features_x=data_model_definition.features_x,
-                features_theta=data_model_definition.features_theta,
-                process_sigma_type=data_model_definition.sigma_delta_process_type,
+                features_θ=data_model_definition.features_θ,
+                process_sigma_type=data_model_definition.Σ_δ_process_type,
             )
         else:
             raise ValueError("Unknown data model type")

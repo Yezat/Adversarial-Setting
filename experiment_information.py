@@ -33,7 +33,7 @@ import uuid
 import json
 import sqlite3
 import pandas as pd
-from data_model import *
+from DataModel.data_model import *
 import time
 import ast
 
@@ -56,32 +56,32 @@ class DataModelDefinition:
         d: int,
         delete_existing: bool,
         normalize_matrices: bool,
-        Sigma_w_content: np.ndarray,
-        Sigma_delta_content: np.ndarray,
-        Sigma_upsilon_content: np.ndarray,
+        Σ_ω_content: np.ndarray,
+        Σ_δ_content: np.ndarray,
+        Σ_ν_content: np.ndarray,
         name: str,
         description: str,
         data_model_type: DataModelType,
         feature_ratios: np.ndarray = None,
         features_x: np.ndarray = None,
-        features_theta: np.ndarray = None,
+        features_θ: np.ndarray = None,
         attack_equal_defense: bool = False,
-        sigma_delta_process_type: SigmaDeltaProcessType = SigmaDeltaProcessType.UseContent,
+        Σ_δ_process_type: SigmaDeltaProcessType = SigmaDeltaProcessType.UseContent,
     ) -> None:
         self.delete_existing: bool = delete_existing
         self.normalize_matrices: bool = normalize_matrices
-        self.Sigma_w_content: np.ndarray = Sigma_w_content
+        self.Σ_ω_content: np.ndarray = Σ_ω_content
         self.attack_equal_defense: bool = attack_equal_defense
-        self.Sigma_delta_content: np.ndarray = Sigma_delta_content
-        self.Sigma_upsilon_content: np.ndarray = Sigma_upsilon_content
+        self.Σ_δ_content: np.ndarray = Σ_δ_content
+        self.Σ_ν_content: np.ndarray = Σ_ν_content
         self.name: str = name
         self.d = d
         self.description: str = description
         self.data_model_type: DataModelType = data_model_type
         self.feature_ratios: np.ndarray = feature_ratios
         self.features_x: np.ndarray = features_x
-        self.features_theta: np.ndarray = features_theta
-        self.sigma_delta_process_type: SigmaDeltaProcessType = sigma_delta_process_type
+        self.features_θ: np.ndarray = features_θ
+        self.Σ_δ_process_type: SigmaDeltaProcessType = Σ_δ_process_type
 
     @classmethod
     def from_name(cls, name: str, data_model_type: DataModelType, base_path="../"):
@@ -96,21 +96,21 @@ class DataModelDefinition:
 
         result = cls(**data_model_definition_dict)
 
-        # make sure Sigma_w, Sigma_delta and Sigma_upsilon are numpy arrays
-        if result.Sigma_w_content is not None:
-            result.Sigma_w_content = np.array(result.Sigma_w_content)
-        if result.Sigma_delta_content is not None:
-            result.Sigma_delta_content = np.array(result.Sigma_delta_content)
-        if result.Sigma_upsilon_content is not None:
-            result.Sigma_upsilon_content = np.array(result.Sigma_upsilon_content)
+        # make sure Σ_ω, Σ_δ and Σ_ν are numpy arrays
+        if result.Σ_ω_content is not None:
+            result.Σ_ω_content = np.array(result.Σ_ω_content)
+        if result.Σ_δ_content is not None:
+            result.Σ_δ_content = np.array(result.Σ_δ_content)
+        if result.Σ_ν_content is not None:
+            result.Σ_ν_content = np.array(result.Σ_ν_content)
 
-        # same for feature_ratios, features_x and features_theta
+        # same for feature_ratios, features_x and features_θ
         if result.feature_ratios is not None:
             result.feature_ratios = np.array(result.feature_ratios)
         if result.features_x is not None:
             result.features_x = np.array(result.features_x)
-        if result.features_theta is not None:
-            result.features_theta = np.array(result.features_theta)
+        if result.features_θ is not None:
+            result.features_θ = np.array(result.features_θ)
 
         return result
 
@@ -336,7 +336,7 @@ class StateEvolutionExperimentInformation:
             for p in task.ps:
                 calibrations.append(
                     overlap_calibration(
-                        data_model.rho, p, overlaps.m, overlaps.q, task.tau
+                        data_model.ρ, p, overlaps.m, overlaps.q, task.tau
                     )
                 )
         calibration_results = CalibrationResults(task.ps, calibrations, None)
@@ -372,7 +372,7 @@ class StateEvolutionExperimentInformation:
 
         # Generalization Error
         self.generalization_error: float = generalization_error(
-            data_model.rho, overlaps.m, overlaps.q, task.tau
+            data_model.ρ, overlaps.m, overlaps.q, task.tau
         )
 
         # Adversarial Generalization Error
@@ -471,7 +471,7 @@ class StateEvolutionExperimentInformation:
         self.q: float = overlaps.q
         self.Q_self: float = overlaps.sigma + overlaps.q
         self.m: float = overlaps.m
-        self.rho: float = data_model.rho
+        self.ρ: float = data_model.ρ
         self.A: float = overlaps.A
         self.N: float = overlaps.N
         self.P: float = overlaps.P
@@ -485,7 +485,7 @@ class StateEvolutionExperimentInformation:
         self.P_hat: float = overlaps.P_hat
         self.N_hat: float = overlaps.N_hat
         # Angle
-        self.angle: float = self.m / np.sqrt((self.q) * data_model.rho)
+        self.angle: float = self.m / np.sqrt((self.q) * data_model.ρ)
 
         # data_model angle and attackability
         self.data_model_angle: float = compute_data_model_angle(data_model, overlaps, 0)
@@ -504,28 +504,28 @@ class StateEvolutionExperimentInformation:
             ]
         )
 
-        # Let's compute the two eigenvalues of Sigma_x, Sigma_theta and Sigma_x * Sigma_theta
+        # Let's compute the two eigenvalues of Σ_x, Σ_θ and Σ_x * Σ_θ
         self.sigmax_eigenvalues = np.array(
             [
-                np.linalg.eigvals(data_model.Sigma_x)[0],
-                np.linalg.eigvals(data_model.Sigma_x)[-1],
+                np.linalg.eigvals(data_model.Σ_x)[0],
+                np.linalg.eigvals(data_model.Σ_x)[-1],
             ]
         )
-        self.sigmatheta_eigenvalues = np.array(
+        self.sigmaθ_eigenvalues = np.array(
             [
-                np.linalg.eigvals(data_model.Sigma_theta)[0],
-                np.linalg.eigvals(data_model.Sigma_theta)[-1],
+                np.linalg.eigvals(data_model.Σ_θ)[0],
+                np.linalg.eigvals(data_model.Σ_θ)[-1],
             ]
         )
-        self.xtheta_eigenvalues = np.array(
+        self.xθ_eigenvalues = np.array(
             [
-                np.linalg.eigvals(data_model.Sigma_x @ data_model.Sigma_theta)[0],
-                np.linalg.eigvals(data_model.Sigma_x @ data_model.Sigma_theta)[-1],
+                np.linalg.eigvals(data_model.Σ_x @ data_model.Σ_θ)[0],
+                np.linalg.eigvals(data_model.Σ_x @ data_model.Σ_θ)[-1],
             ]
         )
 
         self.mu_usefulness = (
-            np.sqrt(2 / np.pi) * data_model.rho / np.sqrt(data_model.rho + task.tau**2)
+            np.sqrt(2 / np.pi) * data_model.ρ / np.sqrt(data_model.ρ + task.tau**2)
         )
         self.gamma_robustness_es: np.ndarray = np.array(
             [
@@ -533,14 +533,14 @@ class StateEvolutionExperimentInformation:
                     eps,
                     self.mu_usefulness
                     - (eps / np.sqrt(task.d))
-                    * np.trace(data_model.Sigma_theta @ data_model.Sigma_upsilon)
-                    / np.trace(data_model.Sigma_theta),
+                    * np.trace(data_model.Σ_θ @ data_model.Σ_ν)
+                    / np.trace(data_model.Σ_θ),
                 )
                 for eps in task.test_against_epsilons
             ]
         )
         self.mu_margin = (
-            np.sqrt(2 / np.pi) * overlaps.m / np.sqrt(data_model.rho + task.tau**2)
+            np.sqrt(2 / np.pi) * overlaps.m / np.sqrt(data_model.ρ + task.tau**2)
         )
 
         # Boundary Loss
@@ -619,22 +619,22 @@ class StateEvolutionExperimentInformation:
             Fs.append(Fs[0])
 
         # now extract the subspace strengths (we assume there are two subspaces or one in case of vanilla gaussian data)
-        subspace_strengths_X = [data_model.Sigma_x[0, 0], data_model.Sigma_x[-1, -1]]
+        subspace_strengths_X = [data_model.Σ_x[0, 0], data_model.Σ_x[-1, -1]]
         subspace_strengths_delta = [
-            data_model.Sigma_delta[0, 0],
-            data_model.Sigma_delta[-1, -1],
+            data_model.Σ_δ[0, 0],
+            data_model.Σ_δ[-1, -1],
         ]
         subspace_strengths_upsilon = [
-            data_model.Sigma_upsilon[0, 0],
-            data_model.Sigma_upsilon[-1, -1],
+            data_model.Σ_ν[0, 0],
+            data_model.Σ_ν[-1, -1],
         ]
-        subspace_strengths_theta = [
-            data_model.Sigma_theta[0, 0],
-            data_model.Sigma_theta[-1, -1],
+        subspace_strengths_θ = [
+            data_model.Σ_θ[0, 0],
+            data_model.Σ_θ[-1, -1],
         ]
-        subspace_strengths_PhiPhiT = [
-            data_model.spec_PhiPhit[0],
-            data_model.spec_PhiPhit[-1],
+        subspace_strengths_ΦΦT = [
+            data_model.spec_ΦΦT[0],
+            data_model.spec_ΦΦT[-1],
         ]
 
         # compute the ratio of each subspace overlap to its strength
@@ -681,12 +681,8 @@ class StateEvolutionExperimentInformation:
 
         # store the subspace strengths ratio
         self.sigmax_subspace_ratio = subspace_strengths_X[0] / subspace_strengths_X[1]
-        self.sigmatheta_subspace_ratio = (
-            subspace_strengths_theta[0] / subspace_strengths_theta[1]
-        )
-        self.phiphit_subspace_ratio = (
-            subspace_strengths_PhiPhiT[0] / subspace_strengths_PhiPhiT[1]
-        )
+        self.sigmaθ_subspace_ratio = subspace_strengths_θ[0] / subspace_strengths_θ[1]
+        self.ΦΦT_subspace_ratio = subspace_strengths_ΦΦT[0] / subspace_strengths_ΦΦT[1]
 
 
 class ERMExperimentInformation:
@@ -694,32 +690,32 @@ class ERMExperimentInformation:
         self, task, data_model, data: DataSet, weights, problem_instance, logger
     ):
         # let's compute and store the overlaps
-        self.Q = weights.dot(data_model.Sigma_x @ weights) / task.d
-        self.A: float = weights.dot(data_model.Sigma_upsilon @ weights) / task.d
+        self.Q = weights.dot(data_model.Σ_x @ weights) / task.d
+        self.A: float = weights.dot(data_model.Σ_ν @ weights) / task.d
         self.N: float = weights.dot(weights) / task.d
-        self.P: float = weights.dot(data_model.Sigma_delta @ weights) / task.d
+        self.P: float = weights.dot(data_model.Σ_δ @ weights) / task.d
 
         # let's calculate the calibration
         analytical_calibrations = []
         erm_calibrations = []
-        if data.theta is not None:
-            self.rho: float = data.theta.dot(data_model.Sigma_x @ data.theta) / task.d
-            self.m = weights.dot(data_model.Sigma_x @ data.theta) / task.d
-            self.F: float = weights.dot(data_model.Sigma_upsilon @ data.theta) / task.d
+        if data.θ is not None:
+            self.ρ: float = data.θ.dot(data_model.Σ_x @ data.θ) / task.d
+            self.m = weights.dot(data_model.Σ_x @ data.θ) / task.d
+            self.F: float = weights.dot(data_model.Σ_ν @ data.θ) / task.d
 
             # We cannot compute the calibration if we don't know the ground truth.
             if task.ps is not None:
                 for p in task.ps:
                     analytical_calibrations.append(
-                        overlap_calibration(data_model.rho, p, self.m, self.Q, task.tau)
+                        overlap_calibration(data_model.ρ, p, self.m, self.Q, task.tau)
                     )
                     erm_calibrations.append(
                         compute_experimental_teacher_calibration(
-                            p, data.theta, weights, data.X_test, task.tau
+                            p, data.θ, weights, data.X_test, task.tau
                         )
                     )
         else:
-            self.rho: float = data_model.rho
+            self.ρ: float = data_model.ρ
             self.m: float = None
 
         analytical_calibrations_result = CalibrationResults(
@@ -762,13 +758,13 @@ class ERMExperimentInformation:
         self.alpha: float = task.alpha
 
         # Angle
-        self.angle: float = self.m / np.sqrt(self.Q * self.rho)
+        self.angle: float = self.m / np.sqrt(self.Q * self.ρ)
 
         # Generalization Error
         yhat_gd = predict_erm(data.X_test, weights)
         self.generalization_error_erm: float = error(data.y_test, yhat_gd)
         self.generalization_error_overlap: float = generalization_error(
-            self.rho, self.m, self.Q, task.tau
+            self.ρ, self.m, self.Q, task.tau
         )
 
         # Adversarial Generalization Error
@@ -777,7 +773,7 @@ class ERMExperimentInformation:
                 (
                     eps,
                     adversarial_error(
-                        data.y_test, data.X_test, weights, eps, data_model.Sigma_upsilon
+                        data.y_test, data.X_test, weights, eps, data_model.Σ_ν
                     ),
                 )
                 for eps in task.test_against_epsilons
@@ -788,7 +784,7 @@ class ERMExperimentInformation:
                 (
                     eps,
                     adversarial_error_teacher(
-                        data.y_test, data.X_test, weights, data.theta, eps, data_model
+                        data.y_test, data.X_test, weights, data.θ, eps, data_model
                     ),
                 )
                 for eps in task.test_against_epsilons
@@ -812,7 +808,7 @@ class ERMExperimentInformation:
                     fair_adversarial_error_erm(
                         data.X_test,
                         weights,
-                        data.theta,
+                        data.θ,
                         eps,
                         task.gamma_fair_error,
                         data_model,
@@ -834,7 +830,7 @@ class ERMExperimentInformation:
 
         # boundary loss
         self.boundary_loss_train: float = compute_boundary_loss(
-            data.y, data.X, task.epsilon, data_model.Sigma_delta, weights, task.lam
+            data.y, data.X, task.epsilon, data_model.Σ_δ, weights, task.lam
         )
         self.boundary_loss_test_es: np.ndarray = np.array(
             [
@@ -844,7 +840,7 @@ class ERMExperimentInformation:
                         data.y_test,
                         data.X_test,
                         eps,
-                        data_model.Sigma_upsilon,
+                        data_model.Σ_ν,
                         weights,
                         task.lam,
                     ),
@@ -855,7 +851,7 @@ class ERMExperimentInformation:
 
         # Loss
         self.training_loss: float = problem_instance.training_loss(
-            weights, data.X, data.y, task.epsilon, Sigma_delta=data_model.Sigma_delta
+            weights, data.X, data.y, task.epsilon, Σ_δ=data_model.Σ_δ
         )
         self.test_losses: np.ndarray = np.array(
             [
@@ -866,7 +862,7 @@ class ERMExperimentInformation:
                         data.X_test,
                         data.y_test,
                         eps,
-                        Sigma_delta=data_model.Sigma_upsilon,
+                        Σ_δ=data_model.Σ_ν,
                     ),
                 )
                 for eps in task.test_against_epsilons
@@ -885,7 +881,7 @@ class ERMExperimentInformation:
         feature_sizes = [int(0)]
         d = task.d
 
-        rhos = []
+        ρs = []
         ms = []
         Qs = []
         As = []
@@ -903,35 +899,24 @@ class ERMExperimentInformation:
             size = slice_to - slice_from
 
             subspace_weights = weights[slice_from:slice_to]
-            subspace_teacher_weights = data.theta[slice_from:slice_to]
+            subspace_teacher_weights = data.θ[slice_from:slice_to]
 
-            subspace_Sigma_x = data_model.Sigma_x[
-                slice_from:slice_to, slice_from:slice_to
-            ]
-            subspace_Sigma_upsilon = data_model.Sigma_upsilon[
-                slice_from:slice_to, slice_from:slice_to
-            ]
-            subspace_Sigma_delta = data_model.Sigma_delta[
-                slice_from:slice_to, slice_from:slice_to
-            ]
+            subspace_Σ_x = data_model.Σ_x[slice_from:slice_to, slice_from:slice_to]
+            subspace_Σ_ν = data_model.Σ_ν[slice_from:slice_to, slice_from:slice_to]
+            subspace_Σ_δ = data_model.Σ_δ[slice_from:slice_to, slice_from:slice_to]
 
-            rho = (
-                subspace_teacher_weights.dot(
-                    subspace_Sigma_x @ subspace_teacher_weights
-                )
+            ρ = (
+                subspace_teacher_weights.dot(subspace_Σ_x @ subspace_teacher_weights)
                 / size
             )
-            m = subspace_teacher_weights.dot(subspace_Sigma_x @ subspace_weights) / size
-            F = (
-                subspace_teacher_weights.dot(subspace_Sigma_upsilon @ subspace_weights)
-                / size
-            )
-            Q = subspace_weights.dot(subspace_Sigma_x @ subspace_weights) / size
-            A = subspace_weights.dot(subspace_Sigma_upsilon @ subspace_weights) / size
+            m = subspace_teacher_weights.dot(subspace_Σ_x @ subspace_weights) / size
+            F = subspace_teacher_weights.dot(subspace_Σ_ν @ subspace_weights) / size
+            Q = subspace_weights.dot(subspace_Σ_x @ subspace_weights) / size
+            A = subspace_weights.dot(subspace_Σ_ν @ subspace_weights) / size
             N = subspace_weights.dot(subspace_weights) / size
-            P = subspace_weights.dot(subspace_Sigma_delta @ subspace_weights) / size
+            P = subspace_weights.dot(subspace_Σ_δ @ subspace_weights) / size
 
-            rhos.append(rho)
+            ρs.append(ρ)
             ms.append(m)
             Qs.append(Q)
             As.append(A)
@@ -939,7 +924,7 @@ class ERMExperimentInformation:
             Ps.append(P)
             Fs.append(F)
 
-        self.subspace_overlaps["rhos"] = rhos
+        self.subspace_overlaps["ρs"] = ρs
         self.subspace_overlaps["ms"] = ms
         self.subspace_overlaps["qs"] = Qs
         self.subspace_overlaps["As"] = As
@@ -957,14 +942,14 @@ class ERMExperimentInformation:
             Fs.append(Fs[0])
 
         # now extract the subspace strengths (we assume there are two subspaces or one in case of vanilla gaussian data)
-        subspace_strengths_X = [data_model.Sigma_x[0, 0], data_model.Sigma_x[-1, -1]]
+        subspace_strengths_X = [data_model.Σ_x[0, 0], data_model.Σ_x[-1, -1]]
         subspace_strengths_delta = [
-            data_model.Sigma_delta[0, 0],
-            data_model.Sigma_delta[-1, -1],
+            data_model.Σ_δ[0, 0],
+            data_model.Σ_δ[-1, -1],
         ]
         subspace_strengths_upsilon = [
-            data_model.Sigma_upsilon[0, 0],
-            data_model.Sigma_upsilon[-1, -1],
+            data_model.Σ_ν[0, 0],
+            data_model.Σ_ν[-1, -1],
         ]
 
         # log the subspace strengths
@@ -1061,7 +1046,7 @@ class DatabaseHandler:
                     m REAL,
                     angle REAL,
                     initial_condition BLOB,
-                    rho REAL,
+                    ρ REAL,
                     alpha REAL,
                     epsilon REAL,
                     test_against_epsilons BLOB,
@@ -1092,14 +1077,14 @@ class DatabaseHandler:
                     data_model_attackability REAL,
                     data_model_adversarial_generalization_errors BLOB,
                     sigmax_subspace_ratio REAL,
-                    sigmatheta_subspace_ratio REAL,
-                    phiphit_subspace_ratio REAL,
+                    sigmaθ_subspace_ratio REAL,
+                    ΦΦT_subspace_ratio REAL,
                     first_term_fair_errors BLOB,
                     second_term_fair_errors BLOB,
                     third_term_fair_errors BLOB,
                     sigmax_eigenvalues BLOB,
-                    sigmatheta_eigenvalues BLOB,
-                    xtheta_eigenvalues BLOB,
+                    sigmaθ_eigenvalues BLOB,
+                    xθ_eigenvalues BLOB,
                     mu_usefulness REAL,
                     gamma_robustness_es BLOB,
                     mu_margin REAL,
@@ -1155,7 +1140,7 @@ class DatabaseHandler:
                     code_version TEXT,
                     experiment_id TEXT,
                     q REAL,
-                    rho REAL,
+                    ρ REAL,
                     m REAL,
                     angle REAL,
                     epsilon REAL,
@@ -1297,7 +1282,7 @@ class DatabaseHandler:
                 experiment_information.m,
                 experiment_information.angle,
                 json.dumps(experiment_information.initial_condition),
-                experiment_information.rho,
+                experiment_information.ρ,
                 float(experiment_information.alpha),
                 float(experiment_information.epsilon),
                 json.dumps(experiment_information.test_against_epsilons),
@@ -1333,8 +1318,8 @@ class DatabaseHandler:
                     cls=NumpyEncoder,
                 ),
                 experiment_information.sigmax_subspace_ratio,
-                experiment_information.sigmatheta_subspace_ratio,
-                experiment_information.phiphit_subspace_ratio,
+                experiment_information.sigmaθ_subspace_ratio,
+                experiment_information.ΦΦT_subspace_ratio,
                 json.dumps(
                     experiment_information.first_term_fair_errors, cls=NumpyEncoder
                 ),
@@ -1345,10 +1330,8 @@ class DatabaseHandler:
                     experiment_information.third_term_fair_errors, cls=NumpyEncoder
                 ),
                 json.dumps(experiment_information.sigmax_eigenvalues, cls=NumpyEncoder),
-                json.dumps(
-                    experiment_information.sigmatheta_eigenvalues, cls=NumpyEncoder
-                ),
-                json.dumps(experiment_information.xtheta_eigenvalues, cls=NumpyEncoder),
+                json.dumps(experiment_information.sigmaθ_eigenvalues, cls=NumpyEncoder),
+                json.dumps(experiment_information.xθ_eigenvalues, cls=NumpyEncoder),
                 experiment_information.mu_usefulness,
                 json.dumps(
                     experiment_information.gamma_robustness_es, cls=NumpyEncoder
@@ -1398,7 +1381,7 @@ class DatabaseHandler:
                 experiment_information.code_version,
                 experiment_information.experiment_id,
                 experiment_information.Q,
-                experiment_information.rho,
+                experiment_information.ρ,
                 experiment_information.m,
                 experiment_information.angle,
                 float(experiment_information.epsilon),
@@ -1573,16 +1556,14 @@ class NumpyDecoder(json.JSONDecoder):
             # Replace the string value with the enumeration type
             obj["problem_type"] = problem_type
 
-        if "sigma_delta_process_type" in obj:
-            # Get the value of 'sigma_delta_process_type'
-            sigma_delta_process_type_str = obj["sigma_delta_process_type"]
+        if "Σ_δ_process_type" in obj:
+            # Get the value of 'Σ_δ_process_type'
+            Σ_δ_process_type_str = obj["Σ_δ_process_type"]
 
             # Map the string value to the enumeration type
-            sigma_delta_process_type = SigmaDeltaProcessType[
-                sigma_delta_process_type_str
-            ]
+            Σ_δ_process_type = SigmaDeltaProcessType[Σ_δ_process_type_str]
 
             # Replace the string value with the enumeration type
-            obj["sigma_delta_process_type"] = sigma_delta_process_type
+            obj["Σ_δ_process_type"] = Σ_δ_process_type
 
         return obj

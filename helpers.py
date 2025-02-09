@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import erfc
 from enum import Enum
-from data_model import DataModelType
+from DataModel.data_model import DataModelType
 import os
 import numba as nb
 

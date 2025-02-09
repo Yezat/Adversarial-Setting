@@ -18,7 +18,7 @@ def compute_solution(ys, xs, Sigmadelta, eps, reg_param):
 d = 200
 tau = 0.05
 Sigmax = np.eye(d, d)
-Sigmatheta = np.eye(d, d)
+Sigmaθ = np.eye(d, d)
 Sigmadelta = np.eye(d, d)
 
 reg_param = 0.1
@@ -30,7 +30,7 @@ for i, alpha in enumerate(alphas):
     n = int(alpha * d)
 
     xs = np.random.multivariate_normal(np.zeros(d), Sigmax, shape=(d, 1))
-    wstar = np.random.multivariate_normal(np.zeros(d), Sigmatheta, shape=(d, 1))
+    wstar = np.random.multivariate_normal(np.zeros(d), Sigmaθ, shape=(d, 1))
 
     ys = np.sign(xs @ wstar / np.sqrt(d) + tau * np.random.randn(n, 1))
 

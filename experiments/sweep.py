@@ -14,7 +14,7 @@ from _version import __version__
 from experiment_information import *
 from state_evolution import overlap_calibration, fixed_point_finder
 from ERM import compute_experimental_teacher_calibration, run_optimizer
-from data_model import *
+from DataModel.data_model import *
 from helpers import Task
 from scipy.optimize import minimize_scalar, dual_annealing, basinhopping, brute
 import logging
@@ -77,9 +77,7 @@ def minimizer_lambda(logger, task, data_model, lam):
     overlaps = fixed_point_finder(logger, data_model, task, log=False)
 
     if task.method == "optimal_lambda":
-        gen_error = generalization_error(
-            data_model.rho, overlaps.m, overlaps.q, task.tau
-        )
+        gen_error = generalization_error(data_model.ρ, overlaps.m, overlaps.q, task.tau)
     elif task.method == "optimal_adversarial_lambda":
         test_against_epsilon = task.test_against_epsilons[0]
         if len(task.test_against_epsilons) > 1:

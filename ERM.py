@@ -19,7 +19,7 @@ from helpers import (
 from scipy.special import erfc, erf
 from scipy.integrate import quad
 import pandas as pd
-from data_model import *
+from DataModel.data_model import *
 import numba as nb
 
 """
@@ -112,8 +112,8 @@ def run_optimizer(
         task.lam,
         task.epsilon,
         task.problem_type,
-        covariance_prior=data_model.Sigma_w,
-        sigma_delta=data_model.Sigma_delta,
+        covariance_prior=data_model.Σ_ω,
+        Σ_δ=data_model.Σ_δ,
         logger=logger,
         values=values,
     )
@@ -178,7 +178,7 @@ def sklearn_optimize(
     epsilon,
     problem_type: ProblemType,
     covariance_prior=None,
-    sigma_delta=None,
+    Σ_δ=None,
     logger=None,
     values=None,
 ):
@@ -186,8 +186,8 @@ def sklearn_optimize(
 
     if covariance_prior is None:
         covariance_prior = np.eye(X.shape[1])
-    if sigma_delta is None:
-        sigma_delta = np.eye(X.shape[1])
+    if Σ_δ is None:
+        Σ_δ = np.eye(X.shape[1])
 
     method = "L-BFGS-B"
 
@@ -218,7 +218,7 @@ def sklearn_optimize(
         w0,
         method=method,
         jac=True,
-        args=(X, target, lam, epsilon, covariance_prior, sigma_delta, logger, values),
+        args=(X, target, lam, epsilon, covariance_prior, Σ_δ, logger, values),
         options={"maxiter": 1000, "disp": False},
     )
 
@@ -258,27 +258,25 @@ def sklearn_optimize(
 class RidgeProblem:
     @staticmethod
     def loss_gradient(
-        coef, X, y, l2_reg_strength, epsilon, covariance_prior, sigma_delta, V=None
+        coef, X, y, l2_reg_strength, epsilon, covariance_prior, Σ_δ, V=None
     ):
         loss = RidgeProblem.compute_loss(
-            coef, X, y, l2_reg_strength, epsilon, covariance_prior, sigma_delta
+            coef, X, y, l2_reg_strength, epsilon, covariance_prior, Σ_δ
         )
 
         grad = RidgeProblem.compute_gradient(
-            coef, X, y, l2_reg_strength, epsilon, covariance_prior, sigma_delta
+            coef, X, y, l2_reg_strength, epsilon, covariance_prior, Σ_δ
         )
 
         return loss, grad
 
     @staticmethod
-    def compute_loss(
-        coef, X, y, l2_reg_strength, epsilon, covariance_prior, sigma_delta
-    ):
+    def compute_loss(coef, X, y, l2_reg_strength, epsilon, covariance_prior, Σ_δ):
         X = X / np.sqrt(X.shape[1])
         epsilon = epsilon / np.sqrt(X.shape[1])
         activation = X @ coef
 
-        wSw = coef.dot(sigma_delta @ coef)
+        wSw = coef.dot(Σ_δ @ coef)
         nww = np.sqrt(coef @ coef)
         adv_strength = epsilon * wSw / nww
 
@@ -289,19 +287,15 @@ class RidgeProblem:
         return loss
 
     @staticmethod
-    def training_loss(w, X, y, epsilon, Sigma_delta):
-        return RidgeProblem.compute_loss(
-            w, X, y, 0, epsilon, np.eye(X.shape[1]), Sigma_delta
-        )
+    def training_loss(w, X, y, epsilon, Σ_δ):
+        return RidgeProblem.compute_loss(w, X, y, 0, epsilon, np.eye(X.shape[1]), Σ_δ)
 
     @staticmethod
-    def compute_gradient(
-        coef, X, y, l2_reg_strength, epsilon, covariance_prior, sigma_delta
-    ):
+    def compute_gradient(coef, X, y, l2_reg_strength, epsilon, covariance_prior, Σ_δ):
         X = X / np.sqrt(X.shape[1])
         activation = X.T @ y
 
-        wSw = coef.dot(sigma_delta @ coef)
+        wSw = coef.dot(Σ_δ @ coef)
         nww = np.sqrt(coef @ coef)
         epsilon = epsilon / np.sqrt(X.shape[1])
 
@@ -311,7 +305,7 @@ class RidgeProblem:
 
         YY = y.T @ y
 
-        Delta = ((sigma_delta + sigma_delta.T) @ coef) / nww - (wSw / nww**3) * coef
+        Delta = ((Σ_δ + Σ_δ.T) @ coef) / nww - (wSw / nww**3) * coef
 
         grad = -2 * activation + 2 * XX @ coef + 2 * epsilon * YY * Delta
         grad += (
@@ -341,7 +335,7 @@ class LogisticProblem:
         l2_reg_strength,
         epsilon,
         covariance_prior,
-        sigma_delta,
+        Σ_δ,
         logger,
         V=None,
     ):
@@ -351,7 +345,7 @@ class LogisticProblem:
 
         l2_reg_strength /= 2
 
-        wSw = weights.dot(sigma_delta @ weights)
+        wSw = weights.dot(Σ_δ @ weights)
         nww = np.sqrt(weights @ weights)
 
         # optimal_attack = epsilon/np.sqrt(n_features) *  wSw / nww
@@ -365,9 +359,9 @@ class LogisticProblem:
             LogisticProblem.compute_gradient(raw_prediction, optimal_attack, y)
         )
 
-        # derivative_optimal_attack = epsilon/np.sqrt(n_features) * ( 2*sigma_delta@weights / nww  - ( wSw / nww**3 ) * weights )
+        # derivative_optimal_attack = epsilon/np.sqrt(n_features) * ( 2*Σ_δ@weights / nww  - ( wSw / nww**3 ) * weights )
         derivative_optimal_attack = (
-            epsilon / np.sqrt(n_features) * sigma_delta @ weights / (np.sqrt(wSw))
+            epsilon / np.sqrt(n_features) * Σ_δ @ weights / (np.sqrt(wSw))
         )
 
         adv_grad_summand = np.outer(
@@ -410,11 +404,9 @@ class LogisticProblem:
         ) / X.shape[0]
 
     @staticmethod
-    def training_loss(w, X, y, epsilon, Sigma_delta):
+    def training_loss(w, X, y, epsilon, Σ_δ):
         z = X @ w / np.sqrt(X.shape[1])
-        attack = (
-            epsilon / np.sqrt(X.shape[1]) * (w.dot(Sigma_delta @ w) / np.sqrt(w @ w))
-        )
+        attack = epsilon / np.sqrt(X.shape[1]) * (w.dot(Σ_δ @ w) / np.sqrt(w @ w))
         return (adversarial_loss(y, z, attack).sum()) / X.shape[0]
 
     """
@@ -436,26 +428,24 @@ class LogisticProblem:
     """
 
     @staticmethod
-    def compute_hessian(X, y, theta, epsilon, lam, Sigma_w):
+    def compute_hessian(X, y, θ, epsilon, lam, Σ_ω):
         X = X / np.sqrt(X.shape[1])
-        raw_prediction = X.dot(theta)
+        raw_prediction = X.dot(θ)
 
         # B - Optimal Attack ()
-        B = epsilon * np.linalg.norm(theta) / np.sqrt(X.shape[1])
+        B = epsilon * np.linalg.norm(θ) / np.sqrt(X.shape[1])
 
         # C and C_prime (n,)
         C = raw_prediction + B
         C_prime = raw_prediction - B
 
         # H - Derivative of Optimal Attack (d,)
-        H = epsilon * theta / (np.linalg.norm(theta) * np.sqrt(X.shape[1]))
+        H = epsilon * θ / (np.linalg.norm(θ) * np.sqrt(X.shape[1]))
 
         # dH - Hessian of Optimal Attack (d,d)
         dH = np.eye(X.shape[1]) * epsilon / (
-            np.linalg.norm(theta) * np.sqrt(X.shape[1])
-        ) - epsilon * np.outer(theta, theta) / (
-            np.linalg.norm(theta) ** 3 * np.sqrt(X.shape[1])
-        )
+            np.linalg.norm(θ) * np.sqrt(X.shape[1])
+        ) - epsilon * np.outer(θ, θ) / (np.linalg.norm(θ) ** 3 * np.sqrt(X.shape[1]))
 
         # dH term
         vec = (1 - y) * sigmoid(C) + y * sigmoid(-C_prime)  # (n,)
@@ -478,13 +468,13 @@ class LogisticProblem:
         hessian += np.einsum("ij,ik->jk", X_minus, act.T)  # (d,d)
 
         # Regularization
-        hessian += lam / 2 * (Sigma_w + Sigma_w.T)
+        hessian += lam / 2 * (Σ_ω + Σ_ω.T)
 
         return hessian
 
     @staticmethod
-    def min_eigenvalue_hessian(X, y, theta, epsilon, lam, Sigma_w):
-        hessian = LogisticProblem.compute_hessian(X, y, theta, epsilon, lam, Sigma_w)
+    def min_eigenvalue_hessian(X, y, θ, epsilon, lam, Σ_ω):
+        hessian = LogisticProblem.compute_hessian(X, y, θ, epsilon, lam, Σ_ω)
         # return np.min(eigvalsh(hessian))
         return eigsh(hessian, k=1, which="SA")[0][0]
 
@@ -505,7 +495,7 @@ class EquivalentLogisticProblem:
         l2_reg_strength,
         epsilon,
         covariance_prior,
-        sigma_delta,
+        Σ_δ,
         logger,
         values,
     ):
@@ -513,7 +503,7 @@ class EquivalentLogisticProblem:
         weights = coef
         raw_prediction = X @ weights / np.sqrt(n_features)
 
-        wSw = weights.dot(sigma_delta @ weights)
+        wSw = weights.dot(Σ_δ @ weights)
         nww = np.sqrt(weights @ weights)
 
         optimal_attack = epsilon / np.sqrt(n_features) * wSw / nww
@@ -533,7 +523,7 @@ class EquivalentLogisticProblem:
         derivative_optimal_attack = (
             epsilon
             / np.sqrt(n_features)
-            * (2 * sigma_delta @ weights / nww - (wSw / nww**3) * weights)
+            * (2 * Σ_δ @ weights / nww - (wSw / nww**3) * weights)
         )
 
         adv_grad_summand = np.outer(
@@ -575,11 +565,9 @@ class EquivalentLogisticProblem:
         ) / X.shape[0]
 
     @staticmethod
-    def training_loss(w, X, y, epsilon, Sigma_delta):
+    def training_loss(w, X, y, epsilon, Σ_δ):
         z = X @ w / np.sqrt(X.shape[1])
-        attack = (
-            epsilon / np.sqrt(X.shape[1]) * (w.dot(Sigma_delta @ w) / np.sqrt(w @ w))
-        )
+        attack = epsilon / np.sqrt(X.shape[1]) * (w.dot(Σ_δ @ w) / np.sqrt(w @ w))
         return (adversarial_loss(y, z, attack).sum()) / X.shape[0]
 
     """
@@ -611,7 +599,7 @@ class PerturbedBoundaryLogisticProblem:
         l2_reg_strength,
         epsilon,
         covariance_prior,
-        sigma_delta,
+        Σ_δ,
         logger,
         V=None,
     ):
@@ -621,7 +609,7 @@ class PerturbedBoundaryLogisticProblem:
 
         l2_reg_strength /= 2
 
-        wSw = weights.dot(sigma_delta @ weights)
+        wSw = weights.dot(Σ_δ @ weights)
         nww = np.sqrt(weights @ weights)
 
         optimal_attack = epsilon / np.sqrt(n_features) * wSw / nww
@@ -688,7 +676,7 @@ class PerturbedBoundaryLogisticProblem:
         derivative_optimal_attack = (
             epsilon
             / np.sqrt(n_features)
-            * (2 * sigma_delta @ weights / nww - (wSw / nww**3) * weights)
+            * (2 * Σ_δ @ weights / nww - (wSw / nww**3) * weights)
         )
 
         positive_adv_grad_summand = np.outer(
@@ -775,11 +763,9 @@ class PerturbedBoundaryLogisticProblem:
         ) / X.shape[0]
 
     @staticmethod
-    def training_loss(w, X, y, epsilon, Sigma_delta):
+    def training_loss(w, X, y, epsilon, Σ_δ):
         z = X @ w / np.sqrt(X.shape[1])
-        attack = (
-            epsilon / np.sqrt(X.shape[1]) * (w.dot(Sigma_delta @ w) / np.sqrt(w @ w))
-        )
+        attack = epsilon / np.sqrt(X.shape[1]) * (w.dot(Σ_δ @ w) / np.sqrt(w @ w))
         return (adversarial_loss(y, z, attack).sum()) / X.shape[0]
 
     """
@@ -815,7 +801,7 @@ class PerturbedBoundaryCoefficientLogisticProblem:
         l2_reg_strength,
         epsilon,
         covariance_prior,
-        sigma_delta,
+        Σ_δ,
         logger,
         V=None,
     ):
@@ -825,7 +811,7 @@ class PerturbedBoundaryCoefficientLogisticProblem:
 
         l2_reg_strength /= 2
 
-        wSw = weights.dot(sigma_delta @ weights)
+        wSw = weights.dot(Σ_δ @ weights)
         nww = np.sqrt(weights @ weights)
 
         optimal_attack = epsilon / np.sqrt(n_features) * wSw / nww
@@ -859,7 +845,7 @@ class PerturbedBoundaryCoefficientLogisticProblem:
         derivative_optimal_attack = (
             epsilon
             / np.sqrt(n_features)
-            * (2 * sigma_delta @ weights / nww - (wSw / nww**3) * weights)
+            * (2 * Σ_δ @ weights / nww - (wSw / nww**3) * weights)
         )
 
         adv_grad_summand = np.outer(
@@ -868,7 +854,7 @@ class PerturbedBoundaryCoefficientLogisticProblem:
         adv_grad_summand = 0
         negative_adv_grad_summand = (
             empirical_e_lam_1 / nww * weights
-        ) + direct_cross_term * (sigma_delta + sigma_delta.T) @ weights
+        ) + direct_cross_term * (Σ_δ + Σ_δ.T) @ weights
 
         positive_data = X[mask_positive]
         positive_data = X
@@ -914,11 +900,9 @@ class PerturbedBoundaryCoefficientLogisticProblem:
         ) / X.shape[0]
 
     @staticmethod
-    def training_loss(w, X, y, epsilon, Sigma_delta):
+    def training_loss(w, X, y, epsilon, Σ_δ):
         z = X @ w / np.sqrt(X.shape[1])
-        attack = (
-            epsilon / np.sqrt(X.shape[1]) * (w.dot(Sigma_delta @ w) / np.sqrt(w @ w))
-        )
+        attack = epsilon / np.sqrt(X.shape[1]) * (w.dot(Σ_δ @ w) / np.sqrt(w @ w))
         return (adversarial_loss(y, z, attack).sum()) / X.shape[0]
 
     """
@@ -944,9 +928,9 @@ def error(y, yhat):
     return 0.25 * np.mean((y - yhat) ** 2)
 
 
-def adversarial_error(y, Xtest, w_gd, epsilon, Sigma_upsilon):
+def adversarial_error(y, Xtest, w_gd, epsilon, Σ_ν):
     d = Xtest.shape[1]
-    wSw = w_gd.dot(Sigma_upsilon @ w_gd)
+    wSw = w_gd.dot(Σ_ν @ w_gd)
     nww = np.sqrt(w_gd @ w_gd)
 
     return error(
@@ -954,9 +938,9 @@ def adversarial_error(y, Xtest, w_gd, epsilon, Sigma_upsilon):
     )
 
 
-def compute_boundary_loss(y, Xtest, epsilon, sigma_delta, w_gd, l2_reg_strength):
+def compute_boundary_loss(y, Xtest, epsilon, Σ_δ, w_gd, l2_reg_strength):
     d = Xtest.shape[1]
-    wSw = w_gd.dot(sigma_delta @ w_gd)
+    wSw = w_gd.dot(Σ_δ @ w_gd)
     nww = np.sqrt(w_gd @ w_gd)
 
     optimal_attack = epsilon / np.sqrt(d) * wSw / nww
@@ -992,7 +976,7 @@ def adversarial_error_teacher(y, Xtest, w_gd, teacher_weights, epsilon, data_mod
 
     nww = np.sqrt(w_gd @ w_gd)
 
-    tSw = teacher_weights.dot(data_model.Sigma_upsilon @ w_gd)  # shape (d,)
+    tSw = teacher_weights.dot(data_model.Σ_ν @ w_gd)  # shape (d,)
 
     y_attacked_teacher = np.sign(
         Xtest @ teacher_weights / np.sqrt(d) - y * epsilon / np.sqrt(d) * tSw / nww
@@ -1007,8 +991,8 @@ def fair_adversarial_error_erm(
     d = X_test.shape[1]
 
     N = w_gd @ w_gd
-    A = w_gd.dot(data_model.Sigma_upsilon @ w_gd)
-    F = w_gd.dot(data_model.Sigma_upsilon @ teacher_weights)
+    A = w_gd.dot(data_model.Σ_ν @ w_gd)
+    F = w_gd.dot(data_model.Σ_ν @ teacher_weights)
     teacher_activation = X_test @ teacher_weights / np.sqrt(d)
     student_activation = X_test @ w_gd / np.sqrt(d)
 
