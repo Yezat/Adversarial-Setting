@@ -1,4 +1,3 @@
-
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
@@ -9,3 +8,11 @@ repos:
       # Run the formatter.
       - id: ruff-format
 
+  - repo: local
+    hooks:
+      - id: post-commit
+        name: post-commit hook
+        entry: hooks/bump-version.sh
+        language: script
+        always_run: true
+        stages: [post-commit]
