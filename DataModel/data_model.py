@@ -5,9 +5,7 @@ This module defines classes to generate data models and sample data for the expe
 import logging
 import numpy as np
 from dataclasses import field, dataclass
-from DataModel.dataset import DataSet
 from typing import Callable, Any
-
 
 DataModelFactoryType = Callable[
     ..., tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]
@@ -63,9 +61,9 @@ class DataModel:
     def __repr__(self):
         return f"DataModel(d={repr(self.d)}, normalize_matrices={repr(self.normalize_matrices)}, data_model_factory={self.data_model_factory.__name__}, factory_kwargs={repr(self.factory_kwargs)}, name={repr(self.name)}, description={repr(self.description)}, gamma={repr(self.gamma)})"
 
-    def __post_init__(self):
+    def generate_model_matrices(self):
         """
-        Computes more attributes.
+        Computes more attributes. Has to be called prior to using the data model instance. It's not called automatically in __post_init__ to save memory at definition time.
 
         Assumes that
         - Σ_x
@@ -160,33 +158,8 @@ class DataModel:
         assert self.Σ_ν.shape == (self.d, self.d)
 
 
-def generate_data(model: DataModel, n: int, tau: float) -> DataSet:
-    """
-    Generates n training data X, y, and test data X_test, y_test and a teacher weight vector w using noise-level tau.
-
-    Args:
-        n (int): Number of training samples.
-        tau (float): Noise level.
-    """
-    rng = np.random.default_rng(seed=42)
-
-    θ = rng.multivariate_normal(np.zeros(model.d), model.Σ_θ, 1, method="cholesky")[0]
-
-    X = rng.multivariate_normal(np.zeros(model.d), model.Σ_x, n, method="cholesky")
-    y = np.sign(X @ θ / np.sqrt(model.d) + tau * np.random.normal(0, 1, (n,)))
-
-    X_test = rng.multivariate_normal(
-        np.zeros(model.d), model.Σ_x, 10000, method="cholesky"
-    )
-    y_test = np.sign(
-        X_test @ θ / np.sqrt(model.d) + tau * np.random.normal(0, 1, (10000,))
-    )
-
-    return DataSet(X, y, X_test, y_test, θ)
-
-
 @dataclass
-class KFeaturesModelDefinition:
+class KFeaturesDefinition:
     """
     This dataclass specifies KFeatures diagonal matrices.
     """
@@ -212,11 +185,11 @@ class KFeaturesModelDefinition:
 
 def k_features_factory(
     d: int,
-    x_diagonal: KFeaturesModelDefinition,
-    θ_diagonal: KFeaturesModelDefinition,
-    ω_diagonal: KFeaturesModelDefinition,
-    δ_diagonal: KFeaturesModelDefinition,
-    ν_diagonal: KFeaturesModelDefinition,
+    x_diagonal: KFeaturesDefinition,
+    θ_diagonal: KFeaturesDefinition,
+    ω_diagonal: KFeaturesDefinition,
+    δ_diagonal: KFeaturesDefinition,
+    ν_diagonal: KFeaturesDefinition,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Factory function for KFeaturesModel.
@@ -229,343 +202,72 @@ def k_features_factory(
     return Σ_x, θ, Σ_ω, Σ_δ, Σ_ν
 
 
-# class KFeaturesModel(DataModel):
-#     def __init__(
-#         self,
-#         d,
-#         logger,
-#         delete_existing=False,
-#         normalize_matrices=True,
-#         attack_equal_defense=False,
-#         source_pickle_path="../",
-#         Σ_ω_content=None,
-#         Σ_δ_content=None,
-#         Σ_ν_content=None,
-#         name="",
-#         description="",
-#         feature_ratios=None,
-#         features_x=None,
-#         features_θ=None,
-#         process_sigma_type: SigmaDeltaProcessType = SigmaDeltaProcessType.UseContent,
-#     ) -> None:
-#         """
-#         k = len(feature_ratios)
-#         feature_ratios = np.array([2,d-2]) # must sum to d and be of length k
-#         features_x = np.array([100,1]) # must be of length k and contains each features size for the data covariance X
-#         features_θ = np.array([1,1]) # must be of length k and contains each features size for the teacher prior
-#         """
+def k_features_defend_teacher_factory(
+    d: int,
+    seed: int,
+    x_diagonal: KFeaturesDefinition,
+    θ_diagonal: KFeaturesDefinition,
+    ω_diagonal: KFeaturesDefinition,
+    ν_diagonal: KFeaturesDefinition,
+    std: float = 0.0001,
+    noise_level: float = 10000,
+):
+    """
+    Factory function for a KFeaturesModel with a defence in the direction of the teacher.
+    """
+    v = θ_diagonal.get_nd_array(d)
 
-#         self.d = d
+    Σ_δ_content = v / np.linalg.norm(v)
 
-#         if feature_ratios is None:
-#             feature_ratios = np.array([1 / d, 1 - 1 / d])
-#         if features_x is None:
-#             features_x = np.array([10, 1])
-#         if features_θ is None:
-#             features_θ = np.array([1, 1])
+    Σ_δ = np.outer(Σ_δ_content, Σ_δ_content)
 
-#         self.model_type = DataModelType.KFeaturesModel
-#         super().__init__(
-#             d,
-#             logger,
-#             delete_existing=delete_existing,
-#             normalize_matrices=normalize_matrices,
-#             source_pickle_path=source_pickle_path,
-#             name=name,
-#             description=description,
-#         )
+    rng = np.random.default_rng(seed=seed)
 
-#         if not self.loaded_from_pickle:
-#             k = len(feature_ratios)
+    # sample a random covariance matrix
+    random_matrix = rng.normal(0, std, (d, d))
+    Σ_δ = random_matrix.T @ random_matrix + Σ_δ * noise_level
 
-#             # transform the feature ratios to feature sizes
-#             feature_sizes = np.floor(feature_ratios * d).astype(int)
-
-#             θ = np.zeros(d)
-#             spec_Omega0 = np.zeros(d)
-#             for i in range(k):
-#                 θ[sum(feature_sizes[:i]) : sum(feature_sizes[: i + 1])] = (
-#                     features_θ[i]
-#                 )
-#                 spec_Omega0[sum(feature_sizes[:i]) : sum(feature_sizes[: i + 1])] = (
-#                     features_x[i]
-#                 )
-#             self.Σ_x = np.diag(spec_Omega0)
-
-#             self.feature_sizes = feature_sizes
-
-#             self.ρ = np.mean(spec_Omega0 * θ)
-#             self.ΦΦT = np.diag(spec_Omega0**2 * θ)
-#             self.Σ_θ = np.diag(θ)
-
-#             Σ_ω = np.zeros(d)
-#             Σ_δ = np.zeros(d)
-#             Σ_ν = np.zeros(d)
-
-#             logging.info(f"d: {d}")
-#             logging.info(f"feature_sizes: {feature_sizes}")
-#             logging.info(f"feature_ratios: {feature_ratios}")
-#             logging.info(f"features_x: {features_x}")
-#             logging.info(f"features_θ: {features_θ}")
-#             logging.info(f"Σ_ω_content: {Σ_ω_content}")
-#             logging.info(f"Σ_δ_content: {Σ_δ_content}")
-#             logging.info(f"Σ_ν_content: {Σ_ν_content}")
-
-#             for i in range(k):
-#                 Σ_ω[sum(feature_sizes[:i]) : sum(feature_sizes[: i + 1])] = (
-#                     Σ_ω_content[i]
-#                 )
-#                 Σ_δ[sum(feature_sizes[:i]) : sum(feature_sizes[: i + 1])] = (
-#                     Σ_δ_content[i]
-#                 )
-#                 Σ_ν[sum(feature_sizes[:i]) : sum(feature_sizes[: i + 1])] = (
-#                     Σ_ν_content[i]
-#                 )
-#             self.Σ_ω = np.diag(Σ_ω)
-#             self.Σ_δ = np.diag(Σ_δ)
-#             self.Σ_ν = np.diag(Σ_ν)
-
-#             self.V_i = np.ones(d)
-
-#             if (
-#                 process_sigma_type == SigmaDeltaProcessType.ComputeTeacherOrthogonal
-#                 or process_sigma_type == SigmaDeltaProcessType.ComputeTeacherDirection
-#             ):
-#                 if process_sigma_type == SigmaDeltaProcessType.ComputeTeacherOrthogonal:
-#                     vprime = np.random.normal(0, 1, d)
-
-#                     # chose v = vprime - <vprime,θ> θ / ||θ||^2
-
-#                     v = (
-#                         vprime
-#                         - np.dot(vprime, θ) * θ / np.linalg.norm(θ) ** 2
-#                     )
-
-#                     # normalize v
-#                     v = v / np.linalg.norm(v)
-
-#                     Σ_δ_content = v
-
-#                     # log in this case v dot θ
-#                     logging.info(f"v dot θ: {np.dot(v,θ)}")
-
-#                 elif (
-#                     process_sigma_type == SigmaDeltaProcessType.ComputeTeacherDirection
-#                 ):
-#                     v = θ
-#                     v = v / np.linalg.norm(v)
-#                     Σ_δ_content = v
-
-#                     # log in this case v dot θ
-#                     logging.info(f"v dot θ: {np.dot(v,θ)}")
-
-#                 # Only for the Optimal Defense Experiment
-#                 self.Σ_δ = np.outer(Σ_δ_content, Σ_δ_content)
-
-#                 # sample a random covariance matrix
-#                 random_matrix = np.random.normal(0, 0.0001, (d, d))
-#                 self.Σ_δ = (
-#                     random_matrix.T @ random_matrix + self.Σ_δ * 10000
-#                 )
-
-#                 self.V_i = Σ_δ_content
-
-#             if attack_equal_defense:
-#                 self.Σ_ν = self.Σ_δ
-
-#             # log the eigenvalues of Σ_δ
-#             logging.info(
-#                 f"Σ_δ eigenvalues: {np.linalg.eigvals(self.Σ_δ)}"
-#             )
-
-#             if self.Σ_ω is None:
-#                 self.Σ_ω = np.eye(self.d)
-#             if self.Σ_δ is None:
-#                 self.Σ_δ = np.eye(self.d)
-#             if self.Σ_ν is None:
-#                 self.Σ_ν = np.eye(self.d)
-
-#             # Compute FTerm
-#             self.FTerm = (
-#                 self.Σ_x.T * self.Σ_θ * self.Σ_ν
-#                 + self.Σ_ν.T * self.Σ_θ * self.Σ_x
-#             )
-
-#             self._finish_initialization()
-
-#     def generate_data(self, n, tau) -> DataSet:
-#         θ = np.random.default_rng().multivariate_normal(
-#             np.zeros(self.d), self.Σ_θ, 1, method="cholesky"
-#         )[0]
-#         X = np.random.default_rng().multivariate_normal(
-#             np.zeros(self.d), self.Σ_x, n, method="cholesky"
-#         )
-
-#         y = np.sign(X @ θ / np.sqrt(self.d) + tau * np.random.normal(0, 1, (n,)))
-
-#         X_test = np.random.default_rng().multivariate_normal(
-#             np.zeros(self.d), self.Σ_x, 10000, method="cholesky"
-#         )
-#         y_test = np.sign(
-#             X_test @ θ / np.sqrt(self.d) + tau * np.random.normal(0, 1, (10000,))
-#         )
-
-#         return DataSet(X, y, X_test, y_test, θ)
+    Σ_x = x_diagonal.get_nd_matrix(d)
+    Σ_ω = ω_diagonal.get_nd_matrix(d)
+    Σ_ν = ν_diagonal.get_nd_matrix(d)
+    θ = θ_diagonal.get_nd_array(d)
+    return Σ_x, θ, Σ_ω, Σ_δ, Σ_ν
 
 
-# class SourceCapacityDataModel(AbstractDataModel):
-#     def __init__(
-#         self,
-#         d,
-#         logger,
-#         delete_existing=False,
-#         normalize_matrices=True,
-#         source_pickle_path="../",
-#         Σ_ω=None,
-#         Σ_δ=None,
-#         Σ_ν=None,
-#         name="",
-#         description="",
-#     ) -> None:
-#         self.model_type = DataModelType.SourceCapacity
-#         super().__init__(
-#             d,
-#             logger,
-#             delete_existing=delete_existing,
-#             normalize_matrices=normalize_matrices,
-#             source_pickle_path=source_pickle_path,
-#             name=name,
-#             description=description,
-#         )
+def k_features_defend_orthogonal_teacher_factory(
+    d: int,
+    seed: int,
+    x_diagonal: KFeaturesDefinition,
+    θ_diagonal: KFeaturesDefinition,
+    ω_diagonal: KFeaturesDefinition,
+    ν_diagonal: KFeaturesDefinition,
+    std: float = 0.0001,
+    noise_level: float = 10000,
+):
+    """
+    Factory function for a KFeaturesModel with a defence in the orthogonal direction of the teacher.
+    """
+    rng = np.random.default_rng(seed=seed)
 
-#         if not self.loaded_from_pickle:
-#             alph = 1.2
-#             r = 0.3
+    vprime = rng.normal(0, 1, d)
 
-#             spec_Omega0 = np.array([self.d / (k + 1) ** alph for k in range(self.d)])
-#             self.Σ_x = np.diag(spec_Omega0)
+    # chose v = vprime - <vprime,θ> θ / ||θ||^2
 
-#             θ = np.sqrt(
-#                 np.array(
-#                     [1 / (k + 1) ** (1 + alph * (2 * r - 1)) for k in range(self.d)]
-#                 )
-#             )
+    θ = θ_diagonal.get_nd_array(d)
 
-#             self.ρ = np.mean(spec_Omega0 * θ**2)
-#             self.ΦΦT = np.diag(spec_Omega0**2 * θ**2)
-#             self.Σ_θ = np.diag(θ**2)
+    v = vprime - np.dot(vprime, θ) * θ / np.linalg.norm(θ) ** 2
 
-#             self.Σ_ω = Σ_ω
-#             self.Σ_δ = Σ_δ
-#             self.Σ_ν = Σ_ν
-#             if self.Σ_ω is None:
-#                 self.Σ_ω = np.eye(self.d)
-#             if self.Σ_δ is None:
-#                 self.Σ_δ = np.eye(self.d)
-#             if self.Σ_ν is None:
-#                 self.Σ_ν = np.eye(self.d)
+    # normalize v
+    Σ_δ_content = v / np.linalg.norm(v)
 
-#             self.FTerm = (
-#                 self.Σ_x.T * self.Σ_θ * self.Σ_ν
-#                 + self.Σ_ν.T * self.Σ_θ * self.Σ_x
-#             )
+    # Only for the Optimal Defense Experiment
+    Σ_δ = np.outer(Σ_δ_content, Σ_δ_content)
 
-#             self._finish_initialization()
+    # sample a random covariance matrix
+    random_matrix = rng.normal(0, std, (d, d))
+    Σ_δ = random_matrix.T @ random_matrix + Σ_δ * noise_level
 
-#     def generate_data(self, n, tau) -> DataSet:
-#         θ = np.random.default_rng().multivariate_normal(
-#             np.zeros(self.d), self.Σ_θ, 1, method="cholesky"
-#         )[0]
-#         X = np.random.default_rng().multivariate_normal(
-#             np.zeros(self.d), self.Σ_x, n, method="cholesky"
-#         )
-
-#         y = np.sign(X @ θ / np.sqrt(self.d) + tau * np.random.normal(0, 1, (n,)))
-
-#         X_test = np.random.default_rng().multivariate_normal(
-#             np.zeros(self.d), self.Σ_x, 10000, method="cholesky"
-#         )
-#         y_test = np.sign(
-#             X_test @ θ / np.sqrt(self.d) + tau * np.random.normal(0, 1, (10000,))
-#         )
-
-#         return DataSet(X, y, X_test, y_test, θ)
-
-
-# class MarginGaussianDataModel(AbstractDataModel):
-#     def __init__(
-#         self,
-#         d,
-#         logger,
-#         delete_existing=False,
-#         normalize_matrices=True,
-#         source_pickle_path="../",
-#         Σ_ω=None,
-#         Σ_δ=None,
-#         Σ_ν=None,
-#         name="",
-#         description="",
-#     ) -> None:
-#         self.model_type = DataModelType.MarginGaussian
-#         super().__init__(
-#             d,
-#             logger,
-#             delete_existing=delete_existing,
-#             normalize_matrices=normalize_matrices,
-#             source_pickle_path=source_pickle_path,
-#             name=name,
-#             description=description,
-#         )
-
-#         if not self.loaded_from_pickle:
-#             """
-#             Warning, these matrices can be anything as this model is not meant to work with the state evolution as it is a mixed gaussian model!
-#             """
-
-#             self.Σ_x = np.eye(self.d)
-#             self.Σ_θ = np.eye(self.d)
-
-#             self.Σ_ω = Σ_ω
-#             self.Σ_δ = Σ_δ
-#             self.Σ_ν = Σ_ν
-#             if self.Σ_ω is None:
-#                 self.Σ_ω = np.eye(self.d)
-#             if self.Σ_δ is None:
-#                 self.Σ_δ = np.eye(self.d)
-#             if self.Σ_ν is None:
-#                 self.Σ_ν = np.eye(self.d)
-
-#             self.FTerm = (
-#                 self.Σ_x.T * self.Σ_θ * self.Σ_ν
-#                 + self.Σ_ν.T * self.Σ_θ * self.Σ_x
-#             )
-
-#             self.ρ = 1
-#             self.ΦΦT = np.eye(self.d)
-
-#             self._finish_initialization()
-
-#     def generate_data(self, n, tau) -> DataSet:
-#         # We fix the teacher to be the first eigenvector in a d-dimensional space
-#         the = np.zeros(self.d)
-#         the[0] = 1
-#         r = 2.0
-
-#         # create the labels
-#         n_half = np.floor(n / 2)
-#         # convert to int
-#         n_half = n_half.astype(int)
-#         n_test_half = np.floor(100000 / 2)
-#         n_test_half = n_test_half.astype(int)
-#         y = np.concatenate([np.ones(n_half), -np.ones(n_half)])
-#         y_test = np.concatenate([np.ones(n_test_half), -np.ones(n_test_half)])
-
-#         # create the data
-#         X = np.random.normal(0, 1, (n_half * 2, self.d))
-#         X_test = np.random.normal(0, 1, (n_test_half * 2, self.d))
-
-#         # change the first dimension of each dataset according to r*y*the
-#         X[:, 0] = r * y * the[0]
-#         X_test[:, 0] = r * y_test * the[0]
-
-#         return DataSet(X, y, X_test, y_test, the)
+    Σ_x = x_diagonal.get_nd_matrix(d)
+    Σ_ω = ω_diagonal.get_nd_matrix(d)
+    Σ_ν = ν_diagonal.get_nd_matrix(d)
+    return Σ_x, θ, Σ_ω, Σ_δ, Σ_ν
