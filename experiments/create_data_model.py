@@ -12,7 +12,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 from _version import __version__
 from experiment_information import *
-from DataModel.data_model import *
+from model.data import *
 from helpers import Task
 import logging
 

@@ -1,6 +1,6 @@
 import numpy as np
-from DataModel.dataset import DataSet, generate_data
-from DataModel.data_model import DataModel, KFeaturesDefinition, k_features_factory
+from model.dataset import DataSet, generate_data
+from model.data import DataModel, KFeaturesDefinition, k_features_factory
 
 
 def test_dataset():

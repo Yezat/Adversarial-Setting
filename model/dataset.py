@@ -1,5 +1,5 @@
 import numpy as np
-from DataModel.data_model import DataModel
+from model.data import DataModel
 
 
 class DataSet:

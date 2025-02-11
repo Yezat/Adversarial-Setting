@@ -1,4 +1,4 @@
-from DataModel.data_model import (
+from model.data import (
     KFeaturesDefinition,
     k_features_factory,
     DataModel,

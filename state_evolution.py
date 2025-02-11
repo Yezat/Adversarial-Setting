@@ -3,7 +3,7 @@ from typing import Tuple
 from scipy.integrate import quad, dblquad
 from scipy.special import erfc, erf, logit, owens_t
 from helpers import *
-from DataModel.data_model import *
+from model.data import *
 from scipy.optimize import root_scalar
 import numba as nb
 import math

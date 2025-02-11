@@ -33,7 +33,7 @@ import uuid
 import json
 import sqlite3
 import pandas as pd
-from DataModel.data_model import *
+from model.data import *
 import time
 import ast
 

@@ -19,7 +19,7 @@ from helpers import (
 from scipy.special import erfc, erf
 from scipy.integrate import quad
 import pandas as pd
-from DataModel.data_model import *
+from model.data import *
 import numba as nb
 
 """
