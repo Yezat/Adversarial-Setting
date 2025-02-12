@@ -7,7 +7,7 @@ from sklearn.utils.validation import check_array, check_consistent_length
 from util.task import Task
 
 
-def manage_optimization(task: Task, data_model: DataModel, data: DataSet, logger):
+def start_optimization(task: Task, data_model: DataModel, data: DataSet):
     values = task.get_values()
 
     w_gd, values = optimize(
@@ -19,7 +19,6 @@ def manage_optimization(task: Task, data_model: DataModel, data: DataSet, logger
         task.problem_type,
         covariance_prior=data_model.Σ_ω,
         Σ_δ=data_model.Σ_δ,
-        logger=logger,
         values=values,
     )
 

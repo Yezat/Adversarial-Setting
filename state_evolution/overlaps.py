@@ -21,14 +21,6 @@ class Overlaps:  # TODO, shall this be a dataclass? Then we can improve also the
         self.F_hat = 0
         self.P_hat = 0
 
-    def log_overlaps(self, logger):
-        logger.info(
-            f"m: {self.m}, q: {self.q}, sigma: {self.sigma}, P: {self.P}, N: {self.N}, A: {self.A}, F: {self.F}"
-        )
-        logger.info(
-            f"m_hat: {self.m_hat}, q_hat: {self.q_hat}, sigma_hat: {self.sigma_hat}, P_hat: {self.P_hat}, N_hat: {self.N_hat}, A_hat: {self.A_hat}, F_hat: {self.F_hat}"
-        )
-
     def update_overlaps(self, m, q, sigma, A, P, F):
         self.n_m = damped_update(m, self.m, self.BLEND_FPE)
         self.n_q = damped_update(q, self.q, self.BLEND_FPE)

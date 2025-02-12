@@ -1,5 +1,5 @@
 import numpy as np
-from numerics.helpers import log1pexp, sigmoid, adversarial_loss
+from numerics.helpers import log1pexp, sigmoid
 
 
 def logistic_loss_gradient(
@@ -62,21 +62,3 @@ def compute_logistic_gradient(z, e, y):
     opt_attack_term = (1 - y) * sigmoid(z + e) + y * sigmoid(-z + e)
     data_term = (1 - y) * sigmoid(z + e) - y * sigmoid(-z + e)
     return opt_attack_term, data_term
-
-
-def logistic_training_loss_with_regularization(
-    w, X, y, lam, epsilon, covariance_prior=None
-):
-    z = X @ w
-    if covariance_prior is None:
-        covariance_prior = np.eye(X.shape[1])
-    return (
-        adversarial_loss(y, z, epsilon / np.sqrt(X.shape[1]), w @ w).sum()
-        + 0.5 * lam * w @ covariance_prior @ w
-    ) / X.shape[0]
-
-
-def logistic_training_loss(w, X, y, epsilon, Σ_δ):
-    z = X @ w / np.sqrt(X.shape[1])
-    attack = epsilon / np.sqrt(X.shape[1]) * (w.dot(Σ_δ @ w) / np.sqrt(w @ w))
-    return (adversarial_loss(y, z, attack).sum()) / X.shape[0]

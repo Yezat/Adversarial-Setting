@@ -1,28 +1,33 @@
 import numpy as np
+from enum import Enum
 from erm.problems.problems import ProblemType
 from model.data import DataModel
 
 
-class Task:  # TODO, is this a use-case for a dataclass?
+class TaskType(Enum):
+    ERM = 0
+    SE = 1
+
+
+class Task:
     def __init__(
         self,
         id,
-        method,  # TODO rename this to task type (optimal_lambda, state_evolution, optimal_epsilon, optimal_adversarial_lambda)
-        problem_type: ProblemType,
+        task_type: TaskType,  # TODO rename this to task type (optimal_lambda, state_evolution, optimal_epsilon, optimal_adversarial_lambda)
+        erm_problem_type: ProblemType,
         alpha,
         epsilon,
         test_against_epsilons: np.ndarray,
         lam,
         tau,
         d,
-        ps,
-        dp,
         data_model: DataModel,
         values: dict,  # TODO rename this, these are additional parameters we're either collecting or passing to the optimizer
         gamma_fair_error: float,
-    ):
+    ) -> None:
         self.id = id
-        self.method = method
+        self.task_type: TaskType = task_type
+        self.erm_problem_type: ProblemType = erm_problem_type
         self.alpha = alpha
         self.epsilon = epsilon
         self.test_against_epsilons: np.ndarray = test_against_epsilons
@@ -31,9 +36,6 @@ class Task:  # TODO, is this a use-case for a dataclass?
         self.d = d
         self.gamma = 1
         self.result = None
-        self.ps = ps
-        self.dp = dp
         self.data_model: DataModel = data_model
         self.values: dict = values
         self.gamma_fair_error: float = gamma_fair_error
-        self.problem_type: ProblemType = problem_type

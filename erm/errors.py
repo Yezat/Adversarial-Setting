@@ -1,4 +1,5 @@
 import numpy as np
+from numerics.helpers import adversarial_loss
 
 
 def error(y, yhat):
@@ -101,3 +102,21 @@ def fair_adversarial_error_erm(
     third_error = error(y_third, y_hat)
 
     return first_error + second_error + third_error
+
+
+def logistic_training_loss_with_regularization(
+    w, X, y, lam, epsilon, covariance_prior=None
+):
+    z = X @ w
+    if covariance_prior is None:
+        covariance_prior = np.eye(X.shape[1])
+    return (
+        adversarial_loss(y, z, epsilon / np.sqrt(X.shape[1]), w @ w).sum()
+        + 0.5 * lam * w @ covariance_prior @ w
+    ) / X.shape[0]
+
+
+def logistic_training_loss(w, X, y, epsilon, Σ_δ):
+    z = X @ w / np.sqrt(X.shape[1])
+    attack = epsilon / np.sqrt(X.shape[1]) * (w.dot(Σ_δ @ w) / np.sqrt(w @ w))
+    return (adversarial_loss(y, z, attack).sum()) / X.shape[0]
