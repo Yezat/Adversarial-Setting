@@ -208,12 +208,12 @@ class KFeaturesDefinition:
         """
         Returns the diagonal matrix of the KFeaturesModel.
         """
-        M = np.zeros(d)
+        v = np.zeros(d)
         c = 0
         for feature_value, feature_size in self.diagonal:
-            M[c : c + feature_size] = feature_value
+            v[c : c + feature_size] = feature_value
             c += feature_size
-        return M
+        return v
 
     def get_nd_matrix(self, d: int) -> np.ndarray:
         return np.diag(self.get_nd_array(d))
