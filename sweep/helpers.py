@@ -13,7 +13,7 @@ from state_evolution.iteration import fixed_point_finder
 
 def run_erm(task: Task, data_model: DataModel) -> ERMResult:
     """
-    Generate Data, run ERM and save the results to the database
+    Generate Data, run ERM and return ERMResult
     """
     logging.info(f"Starting ERM {task}")
     start = time.time()
@@ -22,19 +22,19 @@ def run_erm(task: Task, data_model: DataModel) -> ERMResult:
 
     weights_erm, values = start_optimization(task, data_model, data)
 
-    erm_results = ERMResult(task, data_model, data, weights_erm, values)
+    erm_result = ERMResult(task, data_model, data, weights_erm, values)
 
     end = time.time()
-    erm_results.duration = end - start
+    erm_result.duration = end - start
 
     logging.info(f"Finished ERM {task}")
 
-    return erm_results
+    return erm_result
 
 
 def run_state_evolution(task, data_model) -> SEResult:
     """
-    Starts the state evolution and saves the results to the database
+    Starts the state evolution and returns SEResult
     """
 
     logging.info(f"Starting State Evolution {task}")
