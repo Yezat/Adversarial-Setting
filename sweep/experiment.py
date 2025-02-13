@@ -1,11 +1,12 @@
 from enum import Enum
-from model.data import DataModel
+from model.data import DataModel, KFeaturesDefinition
 from erm.problems.problems import ProblemType
 from util.task import Task, TaskType
 from typing import Iterable, Iterator, Any
 import numpy as np
 from itertools import product
 import json
+from copy import deepcopy
 
 
 class ExperimentType(Enum):  # TODO clean the experiment types
@@ -46,12 +47,14 @@ class Experiment:
         self.taus: Iterable[float] = taus
         self.d: int = d
         self.experiment_type: ExperimentType = experiment_type
-        self.data_model: DataModel = repr(data_model)
+        self.data_model: DataModel = data_model
         self.erm_problem_type: ProblemType = erm_problem_type
         self.gamma_fair_error: float = gamma_fair_error
 
     @classmethod
     def fromdict(cls, d) -> "Experiment":
+        d["data_model"] = DataModel.from_dict(d["data_model"])
+
         return cls(**d)
 
     def to_json(self) -> str:
@@ -113,6 +116,12 @@ class NumpyEncoder(json.JSONEncoder):
             return str(obj)
         if isinstance(obj, Enum):
             return obj.name
+        if isinstance(obj, DataModel):
+            dict_copy = deepcopy(obj.__dict__)
+            dict_copy.pop("data_model_factory")
+            return dict_copy
+        if isinstance(obj, KFeaturesDefinition):
+            return obj.__dict__
         return json.JSONEncoder.default(self, obj)
 
 
@@ -129,5 +138,7 @@ class NumpyDecoder(json.JSONDecoder):
                 obj["experiment_type"] = ExperimentType[obj["experiment_type"]]
             case "erm_problem_type":
                 obj["erm_problem_type"] = ProblemType[obj["erm_problem_type"]]
+            case "data_model":
+                obj["data_model"] = DataModel.from_dict(obj["data_model"])
 
         return obj

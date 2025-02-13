@@ -38,7 +38,8 @@ class DataModel:
     d: int
     normalize_matrices: bool
 
-    data_model_factory: DataModelFactoryType
+    data_model_factory: DataModelFactoryType = None
+    data_model_factory_name: str = None
     factory_kwargs: dict[str, Any] = field(default_factory=dict)
 
     name: str = ""
@@ -58,10 +59,41 @@ class DataModel:
     spec_Σ_x: np.ndarray = field(init=False, repr=False)
     spec_Σ_δ: np.ndarray = field(init=False, repr=False)
 
-    def __repr__(self):
+    def __post_init__(self) -> None:
+        self.data_model_factory_name = self.data_model_factory.__name__
+
+    def __repr__(self) -> str:
         return f"DataModel(d={repr(self.d)}, normalize_matrices={repr(self.normalize_matrices)}, data_model_factory={self.data_model_factory.__name__}, factory_kwargs={repr(self.factory_kwargs)}, name={repr(self.name)}, description={repr(self.description)}, gamma={repr(self.gamma)})"
 
-    def generate_model_matrices(self):
+    @classmethod
+    def from_dict(cls, data) -> "DataModel":
+        k_features_factory_names = {
+            "x_diagonal",
+            "θ_diagonal",
+            "ω_diagonal",
+            "δ_diagonal",
+            "ν_diagonal",
+        }
+
+        kwargs = data["factory_kwargs"]
+
+        match kwargs:
+            case _ if any(key in k_features_factory_names for key in kwargs):
+                matching_keys = [
+                    key for key in kwargs if key in k_features_factory_names
+                ]
+                for key in matching_keys:
+                    data["factory_kwargs"][key] = KFeaturesDefinition.from_dict(
+                        kwargs[key]
+                    )
+
+        data["data_model_factory"] = globals()[data["data_model_factory_name"]]
+
+        logging.info(data)
+
+        return cls(**data)
+
+    def generate_model_matrices(self) -> None:
         """
         Computes more attributes. Has to be called prior to using the data model instance. It's not called automatically in __post_init__ to save memory at definition time.
 
@@ -167,6 +199,10 @@ class KFeaturesDefinition:
     diagonal: list[tuple[int, int]] = field(
         default_factory=list
     )  # list of tuples (feature_value, feature_size)
+
+    @classmethod
+    def from_dict(cls, data) -> "KFeaturesDefinition":
+        return cls(**data)
 
     def get_nd_array(self, d: int) -> np.ndarray:
         """

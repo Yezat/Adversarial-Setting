@@ -23,5 +23,6 @@ setup(
         "experiments",
         "state_evolution",
         "util",
+        "tests",
     ],
 )
