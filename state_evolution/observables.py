@@ -2,7 +2,7 @@ import numpy as np
 from scipy.integrate import quad
 from state_evolution.overlaps import Overlaps
 from numerics.helpers import gaussian, log1pexp_numba, sigma_star
-from state_evolution.proximal import evaluate_proximal
+from numerics.proximal import evaluate_proximal
 from util.task import Task
 from model.data import DataModel
 from scipy.special import erfc, erf, logit, owens_t

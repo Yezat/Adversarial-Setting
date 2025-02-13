@@ -3,7 +3,7 @@ from scipy.integrate import quad
 from state_evolution.overlaps import Overlaps
 from state_evolution.constants import INT_LIMS
 from numerics.helpers import numba_second_derivative_loss, gaussian
-from state_evolution.proximal import evaluate_proximal
+from numerics.proximal import evaluate_proximal
 
 import numba as nb
 import math

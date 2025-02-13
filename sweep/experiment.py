@@ -1,11 +1,11 @@
 from enum import Enum
-from datetime import datetime
 from model.data import DataModel
 from erm.problems.problems import ProblemType
 from util.task import Task, TaskType
-from typing import Iterable, Iterator
-import uuid
+from typing import Iterable, Iterator, Any
+import numpy as np
 from itertools import product
+import json
 
 
 class ExperimentType(Enum):  # TODO clean the experiment types
@@ -34,11 +34,9 @@ class Experiment:
         test_against_epsilons: Iterable[float],
         erm_problem_type: ProblemType,
         gamma_fair_error: float,
-        experiment_name: str = "",
+        name: str = "",
     ) -> None:
-        self.experiment_id: str = str(uuid.uuid4())
-        self.experiment_name: str = experiment_name
-        self.date: datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.name: str = name
         self.state_evolution_repetitions: int = state_evolution_repetitions
         self.erm_repetitions: int = erm_repetitions
         self.alphas: Iterable[float] = alphas
@@ -48,7 +46,6 @@ class Experiment:
         self.taus: Iterable[float] = taus
         self.d: int = d
         self.experiment_type: ExperimentType = experiment_type
-        self.completed: bool = False
         self.data_model: DataModel = repr(data_model)
         self.erm_problem_type: ProblemType = erm_problem_type
         self.gamma_fair_error: float = gamma_fair_error
@@ -56,6 +53,9 @@ class Experiment:
     @classmethod
     def fromdict(cls, d) -> "Experiment":
         return cls(**d)
+
+    def to_json(self) -> str:
+        return json.dumps(self.__dict__, cls=NumpyEncoder)
 
     def __iter__(self) -> Iterator[Task]:
         attributes = {
@@ -67,11 +67,16 @@ class Experiment:
 
         task_id = 0
 
-        def _get_task(combination: dict, task_id: int, task_type: TaskType) -> Task:
+        def _get_task(
+            combination: dict,
+            task_id: int,
+            task_type: TaskType,
+            erm_problem_type: ProblemType = None,
+        ) -> Task:
             return Task(
                 id=task_id,
                 task_type=task_type,
-                problem_type=None,
+                erm_problem_type=erm_problem_type,
                 alpha=combination["alpha"],
                 epsilon=combination["epsilon"],
                 test_against_epsilons=self.test_against_epsilons,
@@ -93,4 +98,36 @@ class Experiment:
             for combination in product(*attributes.values()):
                 comb = dict(zip(attributes.keys(), combination))
                 task_id += 1
-                yield _get_task(comb, task_id, TaskType.ERM)
+                yield _get_task(
+                    comb, task_id, TaskType.ERM, erm_problem_type=ProblemType.Logistic
+                )
+
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj) -> Any:
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, Experiment):
+            return obj.__dict__
+        if isinstance(obj, np.int32):
+            return str(obj)
+        if isinstance(obj, Enum):
+            return obj.name
+        return json.JSONEncoder.default(self, obj)
+
+
+class NumpyDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+    def decode(self, s, _w=json.decoder.WHITESPACE.match) -> Any:
+        # Parse the JSON string into a Python object
+        obj = super().decode(s, _w)
+
+        match obj:
+            case "experiment_type":
+                obj["experiment_type"] = ExperimentType[obj["experiment_type"]]
+            case "erm_problem_type":
+                obj["erm_problem_type"] = ProblemType[obj["erm_problem_type"]]
+
+        return obj

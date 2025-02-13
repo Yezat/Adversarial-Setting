@@ -1,14 +1,13 @@
-# usage: mpiexec -n 5 python sweep.py sweep_experiment.json
+# usage: mpiexec -n 5 python run_sweep.py --file experiment.json
 
 from mpi4py import MPI
 from typing import Any
 from tqdm import tqdm
+import argparse
 import logging
 import time
-import sys
-from sweep.experiment import Experiment
 from util.task import Task, TaskType
-from util.serialisation import NumpyDecoder
+from sweep.experiment import Experiment, NumpyDecoder
 from model.data import DataModel
 from erm.optimize import start_optimization
 from sweep.results.erm import ERMResult
@@ -61,12 +60,13 @@ def run_state_evolution(task, data_model) -> SEResult:
 
 
 # Define a function to process a task
-def process_task(task, data_model) -> Any:
+def process_task(task) -> Any:
     try:
         logging.info(f"Starting task {task.id}")
 
         # get the data model
-        data_model = eval(task.data_model)
+        logging.debug(task.data_model_repr)
+        data_model = eval(task.data_model_repr)
 
         match task.task_type:
             case TaskType.SE:
@@ -110,29 +110,9 @@ def worker() -> None:
     logging.info(f"Worker exiting - my rank is {rank}")
 
 
-def load_experiment(filename) -> Any | None:
-    # Get the experiment information from this file.
-    if filename is None:
-        filename = "sweep_experiment.json"
-
-    # load the experiment parameters from the json file
-    try:
-        with open(filename) as f:
-            experiment_dict = json.load(f, cls=NumpyDecoder)
-            experiment = Experiment.fromdict(experiment_dict)
-            logging.info("Loaded experiment from file %s", filename)
-
-            return experiment
-    except FileNotFoundError:
-        logging.error(
-            "Could not find file %s. Using the standard elements instead", filename
-        )
-
-
 # Define the master function
-def master(num_processes, logger, experiment) -> None:
-    experiment_id = experiment.experiment_id
-    logger.info("Starting Experiment with id %s", experiment_id)
+def master(num_processes, experiment) -> None:
+    logging.info("Starting Experiment %s", experiment.name)
 
     # note starttime
     start = time.time()
@@ -143,7 +123,7 @@ def master(num_processes, logger, experiment) -> None:
     pbar = tqdm(total=len(tasks))
 
     # start the processes
-    logger.info("Starting all processes")
+    logging.info("Starting all processes")
     # Send the tasks to the workers
     task_idx = 0
     received_tasks = 0
@@ -151,26 +131,27 @@ def master(num_processes, logger, experiment) -> None:
         if task_idx >= len(tasks):
             break
         task = tasks[task_idx]
-        logger.info(f"Sending task {task_idx} to {i+1}")
+        logging.info(f"Sending task {task_idx} to {i+1}")
         MPI.COMM_WORLD.send(task, dest=i + 1, tag=task.id)
         task_idx += 1
 
-    logger.info("All processes started - receiving results and sending new tasks")
+    logging.info("All processes started - receiving results and sending new tasks")
     # Receive and store the results from the workers
     while received_tasks < len(tasks):
         status = MPI.Status()
         # log status information
-        logger.info(f"Received the {received_tasks}th task")
+        logging.info(f"Received the {received_tasks}th task")
 
         task = MPI.COMM_WORLD.recv(
             source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status
         )
         received_tasks += 1
 
-        logger.info(f"Received task {task.id} from {status.source}")
+        logging.info(f"Received task {task.id} from {status.source}")
 
-        # result
+        # get the result
         result = task.result
+        logging.debug(result)
 
         # test if the result is an exception
         if not isinstance(result, Exception):
@@ -180,52 +161,82 @@ def master(num_processes, logger, experiment) -> None:
                 case TaskType.SE:
                     raise NotImplementedError
 
-            logger.info(f"Saved {task}")
+            logging.info(f"Saved {task}")
         else:
-            logger.error(f"Error {task}")
+            logging.error(f"Error {task}")
+            logging.error(result)
 
         # Update the progress bar
         pbar.update(1)
-        logger.info("")
+
         # Send the next task to the worker that just finished
         if task_idx < len(tasks):
             task = tasks[task_idx]
             MPI.COMM_WORLD.send(task, dest=status.source, tag=task.id)
             task_idx += 1
 
-    logger.info("All tasks sent and received")
+    logging.info("All tasks sent and received")
 
     # mark the experiment as finished
-    logger.info(f"Marking experiment {experiment_id} as finished")
+    logging.info(f"Marking experiment {experiment.name} as finished")
     end = time.time()
     duration = end - start
-    logger.info("Experiment took %d seconds", duration)
+    logging.info("Experiment took %d seconds", duration)
 
     # Close the progress bar
     pbar.close()
 
-    logger.info("All done - signaling exit")
+    logging.info("All done - signaling exit")
     # signal all workers to stop
     for i in range(num_processes):
         MPI.COMM_WORLD.send(None, dest=i + 1, tag=0)
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Accept either a filename to experiment.json or a JSON string."
+    )
+
+    parser.add_argument(
+        "--file", type=str, help="Path to a JSON file with a serialised experiment."
+    )
+    parser.add_argument(
+        "--json", type=str, help="Serialised JSON experiment string input."
+    )
+
+    args = parser.parse_args()
+
+    # Ensure that at least one argument is provided
+    if not args.file and not args.json:
+        parser.error("At least one of --file or --json must be provided.")
+
+    if args.file:
+        try:
+            with open(args.file, "r") as f:
+                data = json.load(f, cls=NumpyDecoder)
+        except Exception as e:
+            parser.error(f"Failed to read file: {e}")
+
+    if args.json:
+        try:
+            data = json.loads(args.json, cls=NumpyDecoder)
+        except json.JSONDecodeError as e:
+            parser.error(f"Invalid JSON string: {e}")
+
+    experiment = Experiment.fromdict(data)
+
     # create the MPI communicator
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
 
-    # read the filename from the command line
-    filename = sys.argv[1]
-
     logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
         f"%(asctime)s - %(levelname)s - rank {rank} - %(message)s"
     )
     ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
+    ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
@@ -233,14 +244,12 @@ if __name__ == "__main__":
 
     logger.info("This process has rank %d", rank)
 
-    experiment = load_experiment(filename, logger)
-
     if rank == 0:
         # run the master
         master(size - 1, experiment)
 
     else:
         # run the worker
-        worker(logger, experiment)
+        worker()
 
     MPI.Finalize()

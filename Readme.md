@@ -35,6 +35,11 @@ source .venv/bin/activate
 uv pip install -r pyproject.toml
 ```
 
+Build this package
+```bash
+uv pip install .
+```
+
 ## How to contibute
 
 Make the bump-version script executable:
@@ -56,6 +61,11 @@ source .venv/bin/activate
 uv pip install -r pyproject.toml --extra dev
 ```
 
+Build this package in editable mode
+```bash
+uv pip install -e .
+```
+
 Install a pre-commit hook for ruff
 ```bash
 pre-commit install
@@ -65,4 +75,12 @@ pre-commit install
 Run the tests like this to see logging output
 ```bash
 pytest -o log_cli=true -o log_cli_level=INFO
+```
+
+
+If you work with vs code, add this to your .vscode/settings.json file in your workspace for the notebooks to resolve your python path correctly:
+```json
+"python.analysis.extraPaths": [
+        "${workspaceFolder}"
+    ]
 ```

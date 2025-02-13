@@ -36,6 +36,6 @@ class Task:
         self.d = d
         self.gamma = 1
         self.result = None
-        self.data_model: DataModel = data_model
+        self.data_model_repr: str = repr(data_model)
         self.values: dict = values
         self.gamma_fair_error: float = gamma_fair_error

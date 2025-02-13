@@ -15,3 +15,4 @@ experiments/sweep_experiment.json
 sigma_state_evolution.pkl
 *.pkl
 Notebooks/
+adversarial_setting.egg-info
