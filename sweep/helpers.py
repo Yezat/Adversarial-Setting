@@ -5,6 +5,7 @@ import logging
 import time
 from util.task import Task, TaskType
 from model.data import DataModel
+from model.dataset import generate_data
 from erm.optimize import start_optimization
 from sweep.results.erm import ERMResult
 from sweep.results.state_evolution import SEResult
@@ -18,7 +19,9 @@ def run_erm(task: Task, data_model: DataModel) -> ERMResult:
     logging.info(f"Starting ERM {task}")
     start = time.time()
 
-    data = data_model.generate_data(int(task.alpha * task.d), task.tau)
+    data = generate_data(
+        data_model, n=int(task.alpha * task.d), tau=task.tau, seed=task.id
+    )
 
     weights_erm, values = start_optimization(task, data_model, data)
 
@@ -49,7 +52,6 @@ def run_state_evolution(task, data_model) -> SEResult:
     st_exp_info.duration = experiment_duration
 
     logging.info(f"Finished State Evolution {task}")
-    overlaps.log_overlaps(logging)
 
     return st_exp_info
 

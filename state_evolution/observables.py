@@ -227,11 +227,7 @@ def teacher_error(nu: float, tau: float, ρ: float) -> float:
 
 
 def compute_data_model_angle(data_model: DataModel, overlaps: Overlaps, tau):
-    L = (
-        overlaps.sigma_hat * data_model.spec_Σ_x
-        + overlaps.P_hat * data_model.spec_Σ_δ
-        + overlaps.N_hat * np.ones(data_model.d)
-    )
+    L = overlaps.sigma_hat * data_model.spec_Σ_x + overlaps.P_hat * data_model.spec_Σ_δ
     return np.sum(data_model.spec_ΦΦT / L) / np.sqrt(
         (data_model.d * tau**2 + data_model.d * data_model.ρ)
         * np.sum(data_model.spec_ΦΦT * data_model.spec_Σ_x / L**2)
@@ -239,11 +235,7 @@ def compute_data_model_angle(data_model: DataModel, overlaps: Overlaps, tau):
 
 
 def compute_data_model_attackability(data_model: DataModel, overlaps: Overlaps):
-    L = (
-        overlaps.sigma_hat * data_model.spec_Σ_x
-        + overlaps.P_hat * data_model.spec_Σ_δ
-        + overlaps.N_hat * np.ones(data_model.d)
-    )
+    L = overlaps.sigma_hat * data_model.spec_Σ_x + overlaps.P_hat * data_model.spec_Σ_δ
     return np.sum(data_model.spec_ΦΦT * data_model.spec_Σ_ν / L**2) / np.sqrt(
         np.sum(data_model.spec_ΦΦT / L**2)
         * np.sum(data_model.spec_ΦΦT * data_model.spec_Σ_x / L**2)
@@ -272,6 +264,7 @@ def asymptotic_adversarial_generalization_error(
 def adversarial_generalization_error_overlaps_teacher(
     overlaps: Overlaps, task: Task, data_model: DataModel, epsilon: float
 ):
+    raise NotImplementedError
     # if tau is not zero, we can use the simpler formula
     if task.tau >= 1e-10:
         integral = quad(
@@ -313,6 +306,7 @@ def adversarial_generalization_error_overlaps(
 
 
 def first_term_fair_error(overlaps, data_model, gamma, epsilon):
+    raise NotImplementedError
     V = (data_model.ρ) * overlaps.q - overlaps.m**2
     gamma_max = gamma + epsilon * overlaps.F / np.sqrt(overlaps.N)
 
@@ -342,6 +336,7 @@ def first_term_fair_error(overlaps, data_model, gamma, epsilon):
 
 
 def second_term_fair_error(overlaps, data_model, gamma, epsilon):
+    raise NotImplementedError
     V = (data_model.ρ) * overlaps.q - overlaps.m**2
     gamma_max = gamma + epsilon * overlaps.F / np.sqrt(overlaps.N)
 
@@ -363,6 +358,7 @@ def second_term_fair_error(overlaps, data_model, gamma, epsilon):
 
 
 def third_term_fair_error(overlaps, data_model, gamma, epsilon):
+    raise NotImplementedError
     V = (data_model.ρ) * overlaps.q - overlaps.m**2
     # gamma_max = gamma + epsilon * overlaps.F / np.sqrt(overlaps.N)
 

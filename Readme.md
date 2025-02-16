@@ -35,9 +35,14 @@ source .venv/bin/activate
 uv pip install -r pyproject.toml
 ```
 
-Build this package
+Install this package
 ```bash
 uv pip install .
+```
+
+Build brentq.c:
+```bash
+gcc -shared -o numerics/brentq.so numerics/brentq.c
 ```
 
 ## How to contibute
@@ -61,9 +66,14 @@ source .venv/bin/activate
 uv pip install -r pyproject.toml --extra dev
 ```
 
-Build this package in editable mode
+Install this package in editable mode
 ```bash
 uv pip install -e .
+```
+
+Build brentq.c:
+```bash
+gcc -shared -o numerics/brentq.so numerics/brentq.c
 ```
 
 Install a pre-commit hook for ruff

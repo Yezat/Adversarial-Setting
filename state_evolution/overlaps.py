@@ -1,7 +1,7 @@
-from state_evolution.constants import INITIAL_CONDITION
+from state_evolution.constants import INITIAL_CONDITION, BLEND_FPE
 
 
-def damped_update(new, old, damping):
+def damped_update(new, old, damping) -> float:
     return damping * new + (1 - damping) * old
 
 
@@ -21,13 +21,13 @@ class Overlaps:  # TODO, shall this be a dataclass? Then we can improve also the
         self.F_hat = 0
         self.P_hat = 0
 
-    def update_overlaps(self, m, q, sigma, A, P, F):
-        self.n_m = damped_update(m, self.m, self.BLEND_FPE)
-        self.n_q = damped_update(q, self.q, self.BLEND_FPE)
-        self.n_sigma = damped_update(sigma, self.sigma, self.BLEND_FPE)
-        self.n_A = damped_update(A, self.A, self.BLEND_FPE)
-        self.n_P = damped_update(P, self.P, self.BLEND_FPE)
-        self.n_F = damped_update(F, self.F, self.BLEND_FPE)
+    def update_overlaps(self, m, q, sigma, A, P, F) -> float:
+        self.n_m = damped_update(m, self.m, BLEND_FPE)
+        self.n_q = damped_update(q, self.q, BLEND_FPE)
+        self.n_sigma = damped_update(sigma, self.sigma, BLEND_FPE)
+        self.n_A = damped_update(A, self.A, BLEND_FPE)
+        self.n_P = damped_update(P, self.P, BLEND_FPE)
+        self.n_F = damped_update(F, self.F, BLEND_FPE)
 
         # Compute the error
         err = max(

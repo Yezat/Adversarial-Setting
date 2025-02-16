@@ -4,11 +4,6 @@ from state_evolution.overlaps import Overlaps
 from state_evolution.observables import (
     generalization_error,
     adversarial_generalization_error_overlaps,
-    adversarial_generalization_error_overlaps_teacher,
-    fair_adversarial_error_overlaps,
-    first_term_fair_error,
-    second_term_fair_error,
-    third_term_fair_error,
     asymptotic_adversarial_generalization_error,
     compute_data_model_angle,
     compute_data_model_attackability,
@@ -17,6 +12,7 @@ from state_evolution.observables import (
     training_error,
 )
 from sweep.results.result import Result
+from state_evolution.constants import INT_LIMS
 import numpy as np
 
 
@@ -42,78 +38,19 @@ class SEResult(Result):
                 for eps in task.test_against_epsilons
             ]
         )
-        self.adversarial_generalization_errors_teacher: np.ndarray = np.array(
-            [
-                (
-                    eps,
-                    adversarial_generalization_error_overlaps_teacher(
-                        overlaps, task, data_model, eps
-                    ),
-                )
-                for eps in task.test_against_epsilons
-            ]
-        )
-
-        self.fair_adversarial_errors: np.ndarray = np.array(
-            [
-                (
-                    eps,
-                    fair_adversarial_error_overlaps(
-                        overlaps, data_model, task.gamma_fair_error, eps
-                    ),
-                )
-                for eps in task.test_against_epsilons
-            ]
-        )
-
-        self.first_term_fair_errors: np.ndarray = np.array(
-            [
-                (
-                    eps,
-                    first_term_fair_error(
-                        overlaps, data_model, task.gamma_fair_error, eps
-                    ),
-                )
-                for eps in task.test_against_epsilons
-            ]
-        )
-        self.second_term_fair_errors: np.ndarray = np.array(
-            [
-                (
-                    eps,
-                    second_term_fair_error(
-                        overlaps, data_model, task.gamma_fair_error, eps
-                    ),
-                )
-                for eps in task.test_against_epsilons
-            ]
-        )
-        self.third_term_fair_errors: np.ndarray = np.array(
-            [
-                (
-                    eps,
-                    third_term_fair_error(
-                        overlaps, data_model, task.gamma_fair_error, eps
-                    ),
-                )
-                for eps in task.test_against_epsilons
-            ]
-        )
 
         # Training Error
         self.training_error: float = training_error(
-            task, overlaps, data_model, self.int_lims
+            task, overlaps, data_model, INT_LIMS
         )
 
         # Loss
-        self.training_loss: float = training_loss(
-            task, overlaps, data_model, self.int_lims
-        )
+        self.training_loss: float = training_loss(task, overlaps, data_model, INT_LIMS)
         self.test_losses: np.ndarray = np.array(
             [
                 (
                     eps,
-                    test_loss(task, overlaps, data_model, eps, self.int_lims),
+                    test_loss(task, overlaps, data_model, eps, INT_LIMS),
                 )
                 for eps in task.test_against_epsilons
             ]
@@ -179,18 +116,4 @@ class SEResult(Result):
         )
         self.mu_margin = (
             np.sqrt(2 / np.pi) * overlaps.m / np.sqrt(data_model.ρ + task.tau**2)
-        )
-
-        # Boundary Loss
-        self.boundary_loss_train: float = (
-            task.lam * task.epsilon * self.mu_margin * overlaps.P / np.sqrt(overlaps.N)
-        )
-        self.boundary_loss_test_es: np.ndarray = np.array(
-            [
-                (
-                    eps,
-                    task.lam * eps * self.mu_margin * overlaps.A / np.sqrt(overlaps.N),
-                )
-                for eps in task.test_against_epsilons
-            ]
         )

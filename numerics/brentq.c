@@ -3,49 +3,8 @@
 
 #include <math.h>
 #include "zeros.h"
-#include <Python.h>
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define PY_SSIZE_T_CLEAN
-
-
-// Wrapper function for Python
-static PyObject* py_brentq(PyObject* self, PyObject* args) {
-    double xa, xb, xtol, rtol, y, V, w_prime;
-    int iter;
-    double result;
-
-    // Parse Python arguments (all doubles except `iter` which is an int)
-    if (!PyArg_ParseTuple(args, "ddddiddd", &xa, &xb, &xtol, &rtol, &iter, &y, &V, &w_prime)) {
-        return NULL;  // Error handling
-    }
-
-    // Call the actual C function
-    result = brentq(xa, xb, xtol, rtol, iter, y, V, w_prime);
-
-    // Convert C double back to a Python float
-    return PyFloat_FromDouble(result);
-}
-
-// Method table
-static PyMethodDef BrentqMethods[] = {
-    {"brentq", py_brentq, METH_VARARGS, "Perform Brent's method calculations."},
-    {NULL, NULL, 0, NULL}  // Sentinel
-};
-
-// Module definition
-static struct PyModuleDef brentqmodule = {
-    PyModuleDef_HEAD_INIT,
-    "brentq",      // Module name
-    NULL,          // Optional module docstring
-    -1,            // Size of per-interpreter state (-1 means global)
-    BrentqMethods  // Method table
-};
-
-// Module initialization function
-PyMODINIT_FUNC PyInit_brentq(void) {
-    return PyModule_Create(&brentqmodule);
-}
 
 /*
   At the top of the loop the situation is the following:

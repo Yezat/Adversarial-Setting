@@ -5,10 +5,11 @@ from model.data import DataModel
 from model.dataset import DataSet
 from sklearn.utils.validation import check_array, check_consistent_length
 from util.task import Task
+from copy import copy
 
 
 def start_optimization(task: Task, data_model: DataModel, data: DataSet):
-    values = task.get_values()
+    values = copy(task.values)
 
     w_gd, values = optimize(
         np.random.normal(0, 1, (task.d,)),
@@ -16,7 +17,7 @@ def start_optimization(task: Task, data_model: DataModel, data: DataSet):
         data.y,
         task.lam,
         task.epsilon,
-        task.problem_type,
+        task.erm_problem_type,
         covariance_prior=data_model.Σ_ω,
         Σ_δ=data_model.Σ_δ,
         values=values,

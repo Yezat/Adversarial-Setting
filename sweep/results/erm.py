@@ -31,9 +31,11 @@ class ERMResult(Result):
         super().__init__(task, data_model)
 
         # let's compute and store the overlaps
+        self.rho: float = data.theta.dot(data_model.Sigma_x @ data.theta) / task.d
+        self.m = weights.dot(data_model.Sigma_x @ data.theta) / task.d
+        self.F: float = weights.dot(data_model.Sigma_upsilon @ data.theta) / task.d
         self.Q = weights.dot(data_model.Σ_x @ weights) / task.d
         self.A: float = weights.dot(data_model.Σ_ν @ weights) / task.d
-        self.N: float = weights.dot(weights) / task.d
         self.P: float = weights.dot(data_model.Σ_δ @ weights) / task.d
 
         self.__dict__.update(values)
