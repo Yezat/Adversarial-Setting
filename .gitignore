@@ -10,8 +10,8 @@ __pycache__/
 build/
 *.json
 Results/*
+results/*
 experiments/sweep_experiment.json
-# experiments/
 sigma_state_evolution.pkl
 *.pkl
 Notebooks/

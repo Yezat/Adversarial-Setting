@@ -1,8 +1,11 @@
 from mpi4py import MPI
 from typing import Any
 from tqdm import tqdm
+import json
 import logging
 import time
+import polars as pl
+from pathlib import Path
 from util.task import Task, TaskType
 from model.data import DataModel
 from model.dataset import generate_data
@@ -10,6 +13,7 @@ from erm.optimize import start_optimization
 from sweep.results.erm import ERMResult
 from sweep.results.state_evolution import SEResult
 from state_evolution.iteration import fixed_point_finder
+from sweep.experiment import NumpyEncoder
 
 
 def run_erm(task: Task, data_model: DataModel) -> ERMResult:
@@ -133,6 +137,9 @@ def master(num_processes, experiment) -> None:
         MPI.COMM_WORLD.send(task, dest=i + 1, tag=task.id)
         task_idx += 1
 
+    erm_results = []
+    se_results = []
+
     logging.info("All processes started - receiving results and sending new tasks")
     # Receive and store the results from the workers
     while received_tasks < len(tasks):
@@ -155,9 +162,9 @@ def master(num_processes, experiment) -> None:
         if not isinstance(result, Exception):
             match task.task_type:
                 case TaskType.ERM:
-                    raise NotImplementedError
+                    erm_results.append(vars(result))
                 case TaskType.SE:
-                    raise NotImplementedError
+                    se_results.append(vars(result))
 
             logging.info(f"Saved {task}")
         else:
@@ -174,6 +181,26 @@ def master(num_processes, experiment) -> None:
             task_idx += 1
 
     logging.info("All tasks sent and received")
+
+    directory = Path("results") / experiment.name
+    directory.mkdir(parents=True, exist_ok=True)
+
+    # TODO, eventually just saving the dataframe should be enough...
+    with open(directory / "erm_results.json", "w") as f:
+        f.write(json.dumps(erm_results, cls=NumpyEncoder))
+
+    with open(directory / "se_results.json", "w") as f:
+        f.write(json.dumps(se_results, cls=NumpyEncoder))
+
+    # Leverage the existing NumpyEncoder to create a polars dataframe without "object" type
+    df_erm = pl.DataFrame(json.loads(json.dumps(erm_results, cls=NumpyEncoder)))
+    df_se = pl.DataFrame(json.loads(json.dumps(se_results, cls=NumpyEncoder)))
+
+    with open(directory / "df_erm.ser", "wb") as f:
+        f.write(df_erm.serialize())
+
+    with open(directory / "df_se.ser", "wb") as f:
+        f.write(df_se.serialize())
 
     # mark the experiment as finished
     logging.info(f"Marking experiment {experiment.name} as finished")

@@ -18,8 +18,8 @@ import numpy as np
 
 class SEResult(Result):
     # define a constructor with all attributes
-    def __init__(self, task: Task, overlaps: Overlaps, data_model: DataModel):
-        super().__init__(task, data_model)
+    def __init__(self, task: Task, overlaps: Overlaps, data_model: DataModel) -> None:
+        super().__init__(task)
 
         # Generalization Error
         self.generalization_error: float = generalization_error(

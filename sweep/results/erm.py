@@ -28,17 +28,17 @@ class ERMResult(Result):
         weights: np.ndarray,
         values: dict,
     ) -> None:
-        super().__init__(task, data_model)
+        super().__init__(task)
 
         # let's compute and store the overlaps
-        self.rho: float = data.theta.dot(data_model.Sigma_x @ data.theta) / task.d
-        self.m = weights.dot(data_model.Sigma_x @ data.theta) / task.d
-        self.F: float = weights.dot(data_model.Sigma_upsilon @ data.theta) / task.d
+        self.ρ: float = data_model.θ.dot(data_model.Σ_x @ data_model.θ) / task.d
+        self.m = weights.dot(data_model.Σ_x @ data_model.θ) / task.d
+        self.F: float = weights.dot(data_model.Σ_ν @ data_model.θ) / task.d
         self.Q = weights.dot(data_model.Σ_x @ weights) / task.d
         self.A: float = weights.dot(data_model.Σ_ν @ weights) / task.d
         self.P: float = weights.dot(data_model.Σ_δ @ weights) / task.d
 
-        self.__dict__.update(values)
+        self.values = values
 
         overlaps = Overlaps()  # TODO Can we produce a class that produces all relevant overlap-related metrics? then we could just update __dict__ using it in both erm results and state evolution results...
         overlaps.A = self.A
