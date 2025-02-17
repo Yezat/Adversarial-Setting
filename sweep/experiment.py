@@ -31,7 +31,7 @@ class Experiment:
         taus: Iterable[float],
         d: int,
         experiment_type: ExperimentType,
-        data_model: DataModel,
+        data_models: list[DataModel],
         test_against_epsilons: Iterable[float],
         erm_problem_type: ProblemType,
         gamma_fair_error: float,
@@ -47,13 +47,13 @@ class Experiment:
         self.taus: Iterable[float] = taus
         self.d: int = d
         self.experiment_type: ExperimentType = experiment_type
-        self.data_model: DataModel = data_model
+        self.data_models: list[DataModel] = data_models
         self.erm_problem_type: ProblemType = erm_problem_type
         self.gamma_fair_error: float = gamma_fair_error
 
     @classmethod
     def fromdict(cls, d) -> "Experiment":
-        d["data_model"] = DataModel.from_dict(d["data_model"])
+        d["data_models"] = [DataModel.from_dict(m) for m in d["data_models"]]
 
         return cls(**d)
 
@@ -66,6 +66,7 @@ class Experiment:
             "epsilon": self.epsilons,
             "lam": self.lambdas,
             "tau": self.taus,
+            "data_model": self.data_models,
         }
 
         task_id = 0
@@ -86,7 +87,7 @@ class Experiment:
                 lam=combination["lam"],
                 tau=combination["tau"],
                 d=self.d,
-                data_model=self.data_model,
+                data_model=combination["data_model"],
                 values={},
                 gamma_fair_error=self.gamma_fair_error,
             )
@@ -138,7 +139,9 @@ class NumpyDecoder(json.JSONDecoder):
                 obj["experiment_type"] = ExperimentType[obj["experiment_type"]]
             case "erm_problem_type":
                 obj["erm_problem_type"] = ProblemType[obj["erm_problem_type"]]
-            case "data_model":
-                obj["data_model"] = DataModel.from_dict(obj["data_model"])
+            case "data_models":
+                obj["data_models"] = [
+                    DataModel.from_dict(m) for m in obj["data_models"]
+                ]
 
         return obj
