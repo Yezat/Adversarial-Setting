@@ -5,16 +5,12 @@ To reproduce the figures from the paper, please use `define_experiment.ipynb` in
 
 All experiments have a definition for the data-model and problem types considered. The choice of the sweep parameters has to be customised.
 
-Once the experiment has been defined, and a json file containing the data-model and sweep definition (usually called `sweep_experiment.json`) been created, the data-models have to be created using the `create_data_model.py` script.
-Then, the experiment can be exectued using `sweep.py`.
-Running these scripts requires a working MPI installation. The command sequence is
+Once you've created an `experiment.json` file and you would like to run the experiment from the command line instead of the jupyter notebook, use:
 ```bash
-mpiexec -n 5 python create_data_model.py sweep_experiment.json
-mpiexec -n 5 python sweep.py sweep_experiment.json
-```
-Alternatively, in a cluster environment, it is possible to use the generated `run.sh` file.
 
-The `sweep.py` script stores all results in a sqlite database. We provide scripts to easily extract the data in the `Evaluate` folder.
+mpiexec -n 5 python sweep/run_sweep.py --file experiment.json
+```
+Alternatively, in a cluster environment, it is possible to use a `run.sh` file. TODO
 
 The experiments on real data have been performed in the `pca_experiments.ipynb` notebook.
 
@@ -46,11 +42,6 @@ gcc -shared -o numerics/brentq.so numerics/brentq.c
 ```
 
 ## How to contibute
-
-Make the bump-version script executable:
-```bash
-chmod +x hooks/bump-version.sh
-```
 
 Install mpi using brew
 ```bash
