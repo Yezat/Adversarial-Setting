@@ -238,45 +238,12 @@ def k_features_factory(
     return Σ_x, θ, Σ_ω, Σ_δ, Σ_ν
 
 
-def k_features_defend_teacher_factory(
-    d: int,
-    seed: int,
-    x_diagonal: KFeaturesDefinition,
-    θ_diagonal: KFeaturesDefinition,
-    ω_diagonal: KFeaturesDefinition,
-    ν_diagonal: KFeaturesDefinition,
-    std: float = 0.0001,
-    noise_level: float = 10000,
-):
-    """
-    Factory function for a KFeaturesModel with a defence in the direction of the teacher.
-    """
-    v = θ_diagonal.get_nd_array(d)
-
-    Σ_δ_content = v / np.linalg.norm(v)
-
-    Σ_δ = np.outer(Σ_δ_content, Σ_δ_content)
-
-    rng = np.random.default_rng(seed=seed)
-
-    # sample a random covariance matrix
-    random_matrix = rng.normal(0, std, (d, d))
-    Σ_δ = random_matrix.T @ random_matrix + Σ_δ * noise_level
-
-    Σ_x = x_diagonal.get_nd_matrix(d)
-    Σ_ω = ω_diagonal.get_nd_matrix(d)
-    Σ_ν = ν_diagonal.get_nd_matrix(d)
-    θ = θ_diagonal.get_nd_array(d)
-    return Σ_x, θ, Σ_ω, Σ_δ, Σ_ν
-
-
 def k_features_defend_orthogonal_teacher_factory(
     d: int,
     seed: int,
     x_diagonal: KFeaturesDefinition,
     θ_diagonal: KFeaturesDefinition,
     ω_diagonal: KFeaturesDefinition,
-    ν_diagonal: KFeaturesDefinition,
     std: float = 0.0001,
     noise_level: float = 10000,
 ):
@@ -305,5 +272,5 @@ def k_features_defend_orthogonal_teacher_factory(
 
     Σ_x = x_diagonal.get_nd_matrix(d)
     Σ_ω = ω_diagonal.get_nd_matrix(d)
-    Σ_ν = ν_diagonal.get_nd_matrix(d)
+    Σ_ν = Σ_δ.copy()
     return Σ_x, θ, Σ_ω, Σ_δ, Σ_ν
