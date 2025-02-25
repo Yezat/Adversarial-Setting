@@ -12,8 +12,56 @@ from model.dataset import generate_data
 from erm.optimize import start_optimization
 from sweep.results.erm import ERMResult
 from sweep.results.state_evolution import SEResult
+from sweep.results.optimal_lambda import OptimalLambdaResult
 from state_evolution.iteration import fixed_point_finder
+from scipy.optimize import minimize_scalar
 from sweep.experiment import NumpyEncoder
+from state_evolution.observables import generalization_error
+
+
+def minimizer_lambda(task: Task, data_model: DataModel, lam: float) -> float:
+    """
+    Run the state evolution and return the generalization error
+    """
+    task.lam = lam
+    overlaps = fixed_point_finder(data_model=data_model, task=task, log=False)
+
+    gen_error = generalization_error(data_model.rho, overlaps.m, overlaps.q, task.tau)
+
+    logging.info(f"Generalization error for lambda {task.lam} is {gen_error}")
+    return gen_error
+
+
+def get_optimal_lambda(task: Task, data_model: DataModel) -> OptimalLambdaResult:
+    """
+    Computes the optimal lambda given a task and a data_model, returns the lambda
+    """
+    logging.info(f"Starting optimal lambda {task}")
+    start = time.time()
+
+    res = minimize_scalar(
+        lambda la: minimizer_lambda(task=task, data_model=data_model, lam=la),
+        method="bounded",
+        bounds=[-0.000001, 1e3],
+        options={"xatol": 1e-8, "maxiter": 200},
+    )
+
+    logging.info(f"Minimized success: {res.success}; Message: {res.message}")
+    if not res.success:
+        raise Exception("Optimization of lambda failed: " + str(res.message))
+
+    end = time.time()
+    experiment_duration = end - start
+
+    # obtaining overlaps at optimal lambda
+    task.lam = res.x
+    overlaps = fixed_point_finder(data_model, task)
+
+    logging.info(
+        f"Finished optimal lambda {task} in {experiment_duration} seconds - optimal lambda is {res.x}"
+    )
+    result = OptimalLambdaResult(task, overlaps, data_model, optimal_lambda=res.x)
+    return result
 
 
 def run_erm(task: Task, data_model: DataModel) -> ERMResult:
@@ -75,6 +123,8 @@ def process_task(task) -> Any:
                 task.result = run_state_evolution(task, data_model)
             case TaskType.ERM:
                 task.result = run_erm(task, data_model)
+            case TaskType.OL:
+                task.result = get_optimal_lambda(task, data_model)
 
     except Exception as e:
         # log the exception
@@ -163,7 +213,7 @@ def master(num_processes, experiment) -> None:
             match task.task_type:
                 case TaskType.ERM:
                     erm_results.append(vars(result))
-                case TaskType.SE:
+                case TaskType.SE | TaskType.OL:
                     se_results.append(vars(result))
 
             logging.info(f"Saved {task}")

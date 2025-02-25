@@ -9,6 +9,7 @@ from model.data import DataModel
 class TaskType(Enum):
     ERM = 0
     SE = 1
+    OL = 2
 
 
 @dataclass

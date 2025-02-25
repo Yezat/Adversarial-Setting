@@ -9,15 +9,15 @@ import json
 from copy import deepcopy
 
 
-class ExperimentType(Enum):  # TODO clean the experiment types
+class ExperimentType(Enum):
     Sweep = 0
     OptimalLambda = 1
-    SweepAtOptimalLambda = 2
-    OptimalEpsilon = 3
-    OptimalLambdaAdversarialTestError = 4
-    SweepAtOptimalLambdaAdversarialTestError = 5
-    OptimalAdversarialErrorEpsilon = 6
-    SweepAtOptimalAdversarialErrorEpsilon = 7
+
+
+MAP_EXPERIMENT_TYPE_TO_TASK_TYPE_SE = {
+    ExperimentType.Sweep: TaskType.SE,
+    ExperimentType.OptimalLambda: TaskType.OL,
+}
 
 
 class Experiment:
@@ -54,6 +54,8 @@ class Experiment:
     @classmethod
     def fromdict(cls, d) -> "Experiment":
         d["data_models"] = [DataModel.from_dict(m) for m in d["data_models"]]
+
+        d["experiment_type"] = ExperimentType[d["experiment_type"]]
 
         return cls(**d)
 
@@ -96,7 +98,11 @@ class Experiment:
             for combination in product(*attributes.values()):
                 comb = dict(zip(attributes.keys(), combination))
                 task_id += 1
-                yield _get_task(comb, task_id, TaskType.SE)
+                yield _get_task(
+                    comb,
+                    task_id,
+                    MAP_EXPERIMENT_TYPE_TO_TASK_TYPE_SE[self.experiment_type],
+                )
 
         for _ in range(self.erm_repetitions):
             for combination in product(*attributes.values()):
