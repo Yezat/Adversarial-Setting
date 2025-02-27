@@ -26,7 +26,7 @@ def minimizer_lambda(task: Task, data_model: DataModel, lam: float) -> float:
     task.lam = lam
     overlaps = fixed_point_finder(data_model=data_model, task=task, log=False)
 
-    gen_error = generalization_error(data_model.rho, overlaps.m, overlaps.q, task.tau)
+    gen_error = generalization_error(data_model.ρ, overlaps.m, overlaps.q, task.tau)
 
     logging.info(f"Generalization error for lambda {task.lam} is {gen_error}")
     return gen_error
