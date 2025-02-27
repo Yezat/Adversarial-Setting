@@ -1,3 +1,4 @@
+from erm.problems.problems import ProblemType
 from util.task import Task
 from model.dataset import DataSet
 from model.data import DataModel
@@ -37,8 +38,6 @@ class ERMResult(Result):
         self.Q = weights.dot(data_model.Σ_x @ weights) / task.d
         self.A: float = weights.dot(data_model.Σ_ν @ weights) / task.d
         self.P: float = weights.dot(data_model.Σ_δ @ weights) / task.d
-
-        self.values = values
 
         overlaps = Overlaps()  # TODO Can we produce a class that produces all relevant overlap-related metrics? then we could just update __dict__ using it in both erm results and state evolution results...
         overlaps.A = self.A
@@ -154,3 +153,7 @@ class ERMResult(Result):
                 ]
             )
         )
+
+        if task.erm_problem_type == ProblemType.PerturbedLogistic:
+            self.lambda_twiddle_1 = values["lambda_twiddle_1"]
+            self.lambda_twiddle_2 = values["lambda_twiddle_2"]

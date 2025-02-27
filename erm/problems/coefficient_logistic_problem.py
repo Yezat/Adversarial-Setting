@@ -5,6 +5,7 @@ Loss-gradient receives additional coefficients through V to approximate the logi
 
 import numpy as np
 from numerics.helpers import log1pexp, sigmoid
+import logging
 
 
 def coefficient_logistic_loss_gradient(
@@ -24,9 +25,8 @@ def coefficient_logistic_loss_gradient(
     l2_reg_strength /= 2
 
     wSw = weights.dot(Σ_δ @ weights)
-    nww = np.sqrt(weights @ weights)
 
-    optimal_attack = epsilon / np.sqrt(n_features) * wSw / nww
+    optimal_attack = epsilon / np.sqrt(n_features) * np.sqrt(wSw)
 
     margins = y * raw_prediction
 
@@ -36,19 +36,19 @@ def coefficient_logistic_loss_gradient(
     mask_positive = shifted_margins > 0
 
     # compute corresponding subsets
-    empirical_e_lam_1 = V["empirical_e_lam_1"]
-    direct_cross_term = V["direct_cross_term"]
+    lambda_twiddle_1 = V["lambda_twiddle_1"]
+    lambda_twiddle_2 = V["lambda_twiddle_2"]
+
+    logging.info(V)
 
     loss = compute_coefficient_logistic_loss(margins)
-    loss += np.log(2) + empirical_e_lam_1 * wSw / nww + direct_cross_term * wSw
+    loss += np.log(2) + lambda_twiddle_1 * np.sqrt(wSw) + lambda_twiddle_2 * wSw
     loss += l2_reg_strength * (weights @ covariance_prior @ weights)
 
     gradient_per_sample = compute_coefficient_logistic_gradient(margins)
 
     derivative_optimal_attack = (
-        epsilon
-        / np.sqrt(n_features)
-        * (2 * Σ_δ @ weights / nww - (wSw / nww**3) * weights)
+        epsilon / np.sqrt(n_features) * Σ_δ @ weights / (np.sqrt(wSw))
     )
 
     adv_grad_summand = np.outer(gradient_per_sample, -derivative_optimal_attack).sum(
@@ -56,8 +56,8 @@ def coefficient_logistic_loss_gradient(
     )
     adv_grad_summand = 0
     negative_adv_grad_summand = (
-        empirical_e_lam_1 / nww * weights
-    ) + direct_cross_term * (Σ_δ + Σ_δ.T) @ weights
+        lambda_twiddle_1 * 0.5 / np.sqrt(wSw) * (Σ_δ + Σ_δ.T) @ weights
+    ) + lambda_twiddle_2 * (Σ_δ + Σ_δ.T) @ weights
 
     positive_data = X[mask_positive]
     positive_data = X

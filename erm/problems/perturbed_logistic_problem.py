@@ -5,6 +5,7 @@ Loss-gradient updates the value dict V with the empirically measured coefficient
 
 import numpy as np
 from numerics.helpers import log1pexp, sigmoid
+import logging
 
 
 def perturbed_logistic_loss_gradient(
@@ -24,9 +25,8 @@ def perturbed_logistic_loss_gradient(
     l2_reg_strength /= 2
 
     wSw = weights.dot(Σ_δ @ weights)
-    nww = np.sqrt(weights @ weights)
 
-    optimal_attack = epsilon / np.sqrt(n_features) * wSw / nww
+    optimal_attack = epsilon / np.sqrt(n_features) * np.sqrt(wSw)
 
     margins = y * raw_prediction
 
@@ -39,35 +39,22 @@ def perturbed_logistic_loss_gradient(
     shifted_margins_positive = shifted_margins[mask_positive]
     shifted_margins_negative = shifted_margins[~mask_positive]
 
-    # perc = V["perc"]
-    # lambda_t_1 = V["lambda_t_1"]
-    # lambda_t_2 = V["lambda_t_2"]
-
-    empirical_lambda_t_1 = np.sum(-0.5 * shifted_margins_negative) / nww
-    empricial_lambda_t_2 = np.sum((1 / 8) * shifted_margins_negative**2) / nww**2
-    empirical_percentage = np.sum(mask_positive) / X.shape[0]
     n_2 = np.sum(~mask_positive)
-    empirical_e_lam_1 = 0.5 * n_2 * optimal_attack / nww
-    empirical_e_lam_2 = (1 / 8) * n_2 * optimal_attack**2 / nww**2
-    cross_term = -(1 / 4) * np.sum(margins[~mask_positive]) * optimal_attack / nww**2
-    direct_cross_term = (
-        -(1 / 8) * epsilon * np.sum(2 * margins[~mask_positive] - optimal_attack) / nww
-    )
 
-    V["empirical_lambda_t_1"] = empirical_lambda_t_1
-    V["empirical_lambda_t_2"] = empricial_lambda_t_2
-    V["empirical_percentage"] = empirical_percentage
-    V["empirical_e_lam_1"] = empirical_e_lam_1
-    V["empirical_e_lam_2"] = empirical_e_lam_2
-    V["cross_term"] = cross_term
-    V["direct_cross_term"] = direct_cross_term
-    V["n_2"] = n_2
+    lambda_twiddle_1 = n_2 * epsilon / (2 * np.sqrt(n_features)) - epsilon * np.sum(
+        margins[~mask_positive]
+    ) / (4 * np.sqrt(n_features))
+    lambda_twiddle_2 = n_2 * epsilon**2 / (8 * n_features)
+
+    V["lambda_twiddle_1"] = lambda_twiddle_1
+    V["lambda_twiddle_2"] = lambda_twiddle_2
+
+    logging.info(V)
 
     loss = compute_perturbed_logistic_loss(
         shifted_margins_positive, shifted_margins_negative
     )
     loss += l2_reg_strength * (weights @ covariance_prior @ weights)
-    V["loss"] = loss
 
     positive_gradient_per_sample, negative_gradient_per_sample = (
         compute_perturbed_logistic_gradient(
@@ -76,9 +63,7 @@ def perturbed_logistic_loss_gradient(
     )
 
     derivative_optimal_attack = (
-        epsilon
-        / np.sqrt(n_features)
-        * (2 * Σ_δ @ weights / nww - (wSw / nww**3) * weights)
+        epsilon / np.sqrt(n_features) * Σ_δ @ weights / (np.sqrt(wSw))
     )
 
     positive_adv_grad_summand = np.outer(

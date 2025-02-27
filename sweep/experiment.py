@@ -7,6 +7,7 @@ import numpy as np
 from itertools import product
 import json
 from copy import deepcopy
+import logging
 
 
 class ExperimentType(Enum):
@@ -36,6 +37,7 @@ class Experiment:
         erm_problem_type: ProblemType,
         gamma_fair_error: float,
         name: str = "",
+        values_map: dict = {},
     ) -> None:
         self.name: str = name
         self.state_evolution_repetitions: int = state_evolution_repetitions
@@ -50,6 +52,7 @@ class Experiment:
         self.data_models: list[DataModel] = data_models
         self.erm_problem_type: ProblemType = erm_problem_type
         self.gamma_fair_error: float = gamma_fair_error
+        self.values_map = values_map
 
     @classmethod
     def fromdict(cls, d) -> "Experiment":
@@ -57,9 +60,15 @@ class Experiment:
 
         d["experiment_type"] = ExperimentType[d["experiment_type"]]
 
+        d["erm_problem_type"] = ProblemType[d["erm_problem_type"]]
+
+        if isinstance(d["values_map"], dict):
+            d["values_map"] = {eval(k): v for k, v in d["values_map"].items()}
+
         return cls(**d)
 
     def to_json(self) -> str:
+        self.values_map = {str(k): v for k, v in self.values_map.items()}
         return json.dumps(self.__dict__, cls=NumpyEncoder)
 
     def __iter__(self) -> Iterator[Task]:
@@ -78,6 +87,7 @@ class Experiment:
             task_id: int,
             task_type: TaskType,
             erm_problem_type: ProblemType = None,
+            values: dict = None,
         ) -> Task:
             return Task(
                 id=task_id,
@@ -90,7 +100,7 @@ class Experiment:
                 tau=combination["tau"],
                 d=self.d,
                 data_model=combination["data_model"],
-                values={},
+                values=values,
                 gamma_fair_error=self.gamma_fair_error,
             )
 
@@ -108,8 +118,23 @@ class Experiment:
             for combination in product(*attributes.values()):
                 comb = dict(zip(attributes.keys(), combination))
                 task_id += 1
+
+                if self.erm_problem_type == ProblemType.CoefficientLogistic:
+                    values = self.values_map[
+                        (
+                            comb["alpha"],
+                            comb["epsilon"],
+                            comb["tau"],
+                            comb["lam"],
+                            comb["data_model"].name,
+                        )
+                    ]
                 yield _get_task(
-                    comb, task_id, TaskType.ERM, erm_problem_type=ProblemType.Logistic
+                    comb,
+                    task_id,
+                    TaskType.ERM,
+                    erm_problem_type=self.erm_problem_type,
+                    values=values,
                 )
 
 
@@ -129,6 +154,7 @@ class NumpyEncoder(json.JSONEncoder):
             return dict_copy
         if isinstance(obj, KFeaturesDefinition):
             return obj.__dict__
+        logging.info(obj)
         return json.JSONEncoder.default(self, obj)
 
 
