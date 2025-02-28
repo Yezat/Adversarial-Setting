@@ -129,6 +129,8 @@ class Experiment:
                             comb["data_model"].name,
                         )
                     ]
+                else:
+                    values = {}
                 yield _get_task(
                     comb,
                     task_id,
