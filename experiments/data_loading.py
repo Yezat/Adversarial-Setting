@@ -6,7 +6,6 @@ import io
 
 LIST_COLUMNS_ERM = [
     "adversarial_generalization_errors",
-    "adversarial_generalization_errors_teacher",
     "adversarial_generalization_errors_overlap",
     "fair_adversarial_errors",
     "boundary_loss_test_es",
