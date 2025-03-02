@@ -2,6 +2,7 @@ import numpy as np
 from enum import Enum
 from typing import Any
 from erm.problems.problems import ProblemType
+from state_evolution.constants import SEProblemType
 from dataclasses import dataclass
 from model.data import DataModel
 
@@ -17,6 +18,7 @@ class Task:
     id: int
     task_type: TaskType
     erm_problem_type: ProblemType
+    se_problem_type: SEProblemType
     alpha: float
     epsilon: float
     test_against_epsilons: np.ndarray

@@ -1,6 +1,7 @@
 from enum import Enum
 from model.data import DataModel, KFeaturesDefinition
 from erm.problems.problems import ProblemType
+from state_evolution.constants import SEProblemType
 from util.task import Task, TaskType
 from typing import Iterable, Iterator, Any
 import numpy as np
@@ -35,6 +36,7 @@ class Experiment:
         data_models: list[DataModel],
         test_against_epsilons: Iterable[float],
         erm_problem_type: ProblemType,
+        se_problem_type: SEProblemType,
         gamma_fair_error: float,
         name: str = "",
         values_map: dict = {},
@@ -51,6 +53,7 @@ class Experiment:
         self.experiment_type: ExperimentType = experiment_type
         self.data_models: list[DataModel] = data_models
         self.erm_problem_type: ProblemType = erm_problem_type
+        self.se_problem_type: SEProblemType = se_problem_type
         self.gamma_fair_error: float = gamma_fair_error
         self.values_map = values_map
 
@@ -61,6 +64,8 @@ class Experiment:
         d["experiment_type"] = ExperimentType[d["experiment_type"]]
 
         d["erm_problem_type"] = ProblemType[d["erm_problem_type"]]
+
+        d["se_problem_type"] = SEProblemType[d["se_problem_type"]]
 
         if isinstance(d["values_map"], dict):
             d["values_map"] = {eval(k): v for k, v in d["values_map"].items()}
@@ -87,12 +92,14 @@ class Experiment:
             task_id: int,
             task_type: TaskType,
             erm_problem_type: ProblemType = None,
+            se_problem_type: SEProblemType = None,
             values: dict = None,
         ) -> Task:
             return Task(
                 id=task_id,
                 task_type=task_type,
                 erm_problem_type=erm_problem_type,
+                se_problem_type=se_problem_type,
                 alpha=combination["alpha"],
                 epsilon=combination["epsilon"],
                 test_against_epsilons=self.test_against_epsilons,
@@ -112,6 +119,7 @@ class Experiment:
                     comb,
                     task_id,
                     MAP_EXPERIMENT_TYPE_TO_TASK_TYPE_SE[self.experiment_type],
+                    se_problem_type=self.se_problem_type,
                 )
 
         for _ in range(self.erm_repetitions):
@@ -136,6 +144,7 @@ class Experiment:
                     task_id,
                     TaskType.ERM,
                     erm_problem_type=self.erm_problem_type,
+                    se_problem_type=self.se_problem_type,  # This is passed to evaluate the correct results computed on top of overlaps
                     values=values,
                 )
 

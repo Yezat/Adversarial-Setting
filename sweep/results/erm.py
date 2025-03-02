@@ -2,7 +2,7 @@ from erm.problems.problems import ProblemType
 from util.task import Task
 from model.dataset import DataSet
 from model.data import DataModel
-from state_evolution.overlaps import Overlaps, OVERLAPS, HAT_OVERLAPS
+from state_evolution.overlaps import Overlaps
 from erm.prediction import predict_erm
 from erm.errors import (
     error,
@@ -14,7 +14,7 @@ from erm.errors import (
 )
 from state_evolution.observables import (
     generalization_error,
-    adversarial_generalization_error_overlaps,
+    MAP_PROBLEM_TYPE_ADV_GEN_ERR_OVERLAP,
 )
 import numpy as np
 from sweep.results.result import Result
@@ -39,9 +39,7 @@ class ERMResult(Result):
         self.A: float = weights.dot(data_model.Σ_ν @ weights) / task.d
         self.P: float = weights.dot(data_model.Σ_δ @ weights) / task.d
 
-        overlaps = Overlaps(
-            OVERLAPS, HAT_OVERLAPS
-        )  # TODO Can we produce a class that produces all relevant overlap-related metrics? then we could just update __dict__ using it in both erm results and state evolution results...
+        overlaps = Overlaps.from_se_problem_type(task.se_problem_type)
         overlaps.A = self.A
         overlaps.m = self.m
         overlaps.q = self.Q
@@ -85,7 +83,7 @@ class ERMResult(Result):
             [
                 (
                     eps,
-                    adversarial_generalization_error_overlaps(
+                    MAP_PROBLEM_TYPE_ADV_GEN_ERR_OVERLAP[task.se_problem_type](
                         overlaps, task, data_model, eps
                     ),
                 )

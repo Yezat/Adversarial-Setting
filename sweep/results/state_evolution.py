@@ -3,16 +3,15 @@ from model.data import DataModel
 from state_evolution.overlaps import Overlaps
 from state_evolution.observables import (
     generalization_error,
-    adversarial_generalization_error_overlaps,
     asymptotic_adversarial_generalization_error,
-    compute_data_model_angle,
-    compute_data_model_attackability,
-    training_loss,
-    test_loss,
-    training_error,
+    fair_adversarial_error_overlaps,
+    MAP_PROBLEM_TYPE_TRAINING_LOSS,
+    MAP_PROBLEM_TYPE_TEST_LOSS,
+    MAP_PROBLEM_TYPE_TRAINING_ERROR,
+    MAP_PROBLEM_TYPE_ADV_GEN_ERR_OVERLAP,
 )
 from sweep.results.result import Result
-from state_evolution.constants import INT_LIMS
+from state_evolution.constants import INT_LIMS, SEProblemType
 import numpy as np
 
 
@@ -31,7 +30,7 @@ class SEResult(Result):
             [
                 (
                     eps,
-                    adversarial_generalization_error_overlaps(
+                    MAP_PROBLEM_TYPE_ADV_GEN_ERR_OVERLAP[task.se_problem_type](
                         overlaps, task, data_model, eps
                     ),
                 )
@@ -40,17 +39,21 @@ class SEResult(Result):
         )
 
         # Training Error
-        self.training_error: float = training_error(
-            task, overlaps, data_model, INT_LIMS
-        )
+        self.training_error: float = MAP_PROBLEM_TYPE_TRAINING_ERROR[
+            task.se_problem_type
+        ](task, overlaps, data_model, INT_LIMS)
 
         # Loss
-        self.training_loss: float = training_loss(task, overlaps, data_model, INT_LIMS)
+        self.training_loss: float = MAP_PROBLEM_TYPE_TRAINING_LOSS[
+            task.se_problem_type
+        ](task, overlaps, data_model, INT_LIMS)
         self.test_losses: np.ndarray = np.array(
             [
                 (
                     eps,
-                    test_loss(task, overlaps, data_model, eps, INT_LIMS),
+                    MAP_PROBLEM_TYPE_TEST_LOSS[task.se_problem_type](
+                        task, overlaps, data_model, eps, INT_LIMS
+                    ),
                 )
                 for eps in task.test_against_epsilons
             ]
@@ -63,11 +66,6 @@ class SEResult(Result):
         # Angle
         self.angle: float = self.m / np.sqrt((self.q) * data_model.ρ)
 
-        # data_model angle and attackability
-        self.data_model_angle: float = compute_data_model_angle(data_model, overlaps, 0)
-        self.data_model_attackability: float = compute_data_model_attackability(
-            data_model, overlaps
-        )
         self.data_model_adversarial_test_errors: np.ndarray = np.array(
             [
                 (
@@ -118,3 +116,8 @@ class SEResult(Result):
         self.mu_margin = (
             np.sqrt(2 / np.pi) * overlaps.m / np.sqrt(data_model.ρ + task.tau**2)
         )
+
+        if task.se_problem_type == SEProblemType.LogisticFGM:
+            self.fair_error = fair_adversarial_error_overlaps(
+                overlaps, data_model, task.gamma_fair_error, task.epsilon
+            )

@@ -1,9 +1,28 @@
 import logging
 from util.task import Task
 from model.data import DataModel
-from state_evolution.overlaps import Overlaps, OVERLAPS, HAT_OVERLAPS
-from state_evolution.constants import TOL_FPE, MIN_ITER_FPE, MAX_ITER_FPE
-from state_evolution.logistic_integrals import var_func, var_hat_func
+from state_evolution.overlaps import Overlaps
+from state_evolution.constants import TOL_FPE, MIN_ITER_FPE, MAX_ITER_FPE, SEProblemType
+from state_evolution.logistic.logistic_integrals import (
+    var_func as logistic_var_func,
+    var_hat_func as logistic_var_hat_func,
+)
+
+from state_evolution.logistic_fgm.logistic_fgm_integrals import (
+    var_func as logistic_fgm_var_func,
+    var_hat_func as logistic_fgm_var_hat_func,
+)
+
+
+MAP_PROBLEM_TYPE_VAR_FUNC = {
+    SEProblemType.Logistic: logistic_var_func,
+    SEProblemType.LogisticFGM: logistic_fgm_var_func,
+}
+
+MAP_PROBLEM_TYPE_VAR_HAT_FUNC = {
+    SEProblemType.Logistic: logistic_var_hat_func,
+    SEProblemType.LogisticFGM: logistic_fgm_var_hat_func,
+}
 
 
 def fixed_point_finder(
@@ -11,7 +30,7 @@ def fixed_point_finder(
     task: Task,
     log: bool = True,
 ) -> Overlaps:
-    overlaps = Overlaps(OVERLAPS, HAT_OVERLAPS)
+    overlaps = Overlaps.from_se_problem_type(task.se_problem_type)
 
     err = 1.0
     iter_nb = 0
@@ -21,9 +40,13 @@ def fixed_point_finder(
             logging.info(f"iter_nb: {iter_nb}, err: {err}")
             logging.info(f"error: {err}")
 
-        overlaps = var_hat_func(task, overlaps, data_model)
+        overlaps = MAP_PROBLEM_TYPE_VAR_HAT_FUNC[task.se_problem_type](
+            task, overlaps, data_model
+        )
 
-        new_overlaps = var_func(task, overlaps, data_model)
+        new_overlaps = MAP_PROBLEM_TYPE_VAR_FUNC[task.se_problem_type](
+            task, overlaps, data_model
+        )
 
         err = overlaps.update_overlaps(new_overlaps)
 

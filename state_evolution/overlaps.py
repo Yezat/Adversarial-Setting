@@ -1,9 +1,13 @@
 from typing import Iterable
-from state_evolution.constants import INITIAL_CONDITION, BLEND_FPE
-
-
-OVERLAPS = ["m", "q", "sigma", "A", "P", "F"]
-HAT_OVERLAPS = ["m_hat", "q_hat", "sigma_hat", "A_hat", "F_hat", "P_hat"]
+from state_evolution.constants import (
+    INITIAL_CONDITION,
+    BLEND_FPE,
+    SEProblemType,
+    OVERLAPS,
+    OVERLAPS_FGM,
+    HAT_OVERLAPS,
+    HAT_OVERLAPS_FGM,
+)
 
 
 def damped_update(new, old, damping) -> float:
@@ -37,6 +41,14 @@ class Overlaps:  # TODO, shall this be a dataclass? Then we can improve also the
 
     def __setitem__(self, key, value) -> None:
         self.__setattr__(key, value)
+
+    @classmethod
+    def from_se_problem_type(self, se_problem_type: SEProblemType) -> "Overlaps":
+        match se_problem_type:
+            case SEProblemType.Logistic:
+                return Overlaps(OVERLAPS, HAT_OVERLAPS)
+            case SEProblemType.LogisticFGM:
+                return Overlaps(OVERLAPS_FGM, HAT_OVERLAPS_FGM)
 
     def update_overlaps(self, other: "Overlaps") -> float:
         err = 0
