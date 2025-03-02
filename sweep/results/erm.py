@@ -57,7 +57,7 @@ class ERMResult(Result):
         )
 
         # Adversarial Generalization Error
-        self.adversarial_generalization_errors: np.ndarray = np.array(  # TODO this looks like it could be simplified in terms of code structure...
+        self.adversarial_generalization_errors: np.ndarray = np.array(
             [
                 (
                     eps,
@@ -66,6 +66,15 @@ class ERMResult(Result):
                     ),
                 )
                 for eps in task.test_against_epsilons
+            ]
+        )
+        self.boundary_errors: np.ndarray = np.array(
+            [
+                (
+                    eps,
+                    adv_error - self.generalization_error_erm,
+                )
+                for eps, adv_error in self.adversarial_generalization_errors
             ]
         )
         self.adversarial_generalization_errors_teacher: np.ndarray = np.array(
@@ -136,22 +145,20 @@ class ERMResult(Result):
         self.training_loss: float = logistic_training_loss(
             weights, data.X, data.y, task.epsilon, Σ_δ=data_model.Σ_δ
         )
-        self.test_losses: np.ndarray = (
-            np.array(  # TODO is this correct? shouldn't this be called training losses?
-                [
-                    (
+        self.test_losses: np.ndarray = np.array(
+            [
+                (
+                    eps,
+                    logistic_training_loss(
+                        weights,
+                        data.X_test,
+                        data.y_test,
                         eps,
-                        logistic_training_loss(
-                            weights,
-                            data.X_test,
-                            data.y_test,
-                            eps,
-                            Σ_δ=data_model.Σ_ν,
-                        ),
-                    )
-                    for eps in task.test_against_epsilons
-                ]
-            )
+                        Σ_δ=data_model.Σ_ν,
+                    ),
+                )
+                for eps in task.test_against_epsilons
+            ]
         )
 
         if task.erm_problem_type == ProblemType.PerturbedLogistic:

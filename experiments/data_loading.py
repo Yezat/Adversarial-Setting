@@ -10,6 +10,7 @@ LIST_COLUMNS_ERM = [
     "adversarial_generalization_errors_overlap",
     "fair_adversarial_errors",
     "boundary_loss_test_es",
+    "boundary_errors",
     "test_losses",
 ]
 
@@ -18,6 +19,7 @@ LIST_COLUMNS_SE = [
     "test_losses",
     "data_model_adversarial_test_errors",
     "gamma_robustness_es",
+    "boundary_errors",
 ]
 
 KEYS = ["alpha", "epsilon", "tau", "lam", "epsilon_g", "data_model_name"]

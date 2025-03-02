@@ -37,6 +37,15 @@ class SEResult(Result):
                 for eps in task.test_against_epsilons
             ]
         )
+        self.boundary_errors: np.ndarray = np.array(
+            [
+                (
+                    eps,
+                    adv_error - self.generalization_error,
+                )
+                for eps, adv_error in self.adversarial_generalization_errors
+            ]
+        )
 
         # Training Error
         self.training_error: float = MAP_PROBLEM_TYPE_TRAINING_ERROR[
