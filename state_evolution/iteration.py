@@ -1,7 +1,7 @@
 import logging
 from util.task import Task
 from model.data import DataModel
-from state_evolution.overlaps import Overlaps
+from state_evolution.overlaps import Overlaps, OVERLAPS, HAT_OVERLAPS
 from state_evolution.constants import TOL_FPE, MIN_ITER_FPE, MAX_ITER_FPE
 from state_evolution.logistic_integrals import var_func, var_hat_func
 
@@ -10,8 +10,8 @@ def fixed_point_finder(
     data_model: DataModel,
     task: Task,
     log: bool = True,
-):
-    overlaps = Overlaps()
+) -> Overlaps:
+    overlaps = Overlaps(OVERLAPS, HAT_OVERLAPS)
 
     err = 1.0
     iter_nb = 0
@@ -23,11 +23,9 @@ def fixed_point_finder(
 
         overlaps = var_hat_func(task, overlaps, data_model)
 
-        new_m, new_q, new_sigma, new_A, new_P, new_F = var_func(
-            task, overlaps, data_model
-        )
+        new_overlaps = var_func(task, overlaps, data_model)
 
-        err = overlaps.update_overlaps(new_m, new_q, new_sigma, new_A, new_P, new_F)
+        err = overlaps.update_overlaps(new_overlaps)
 
         iter_nb += 1
         if iter_nb > MAX_ITER_FPE:

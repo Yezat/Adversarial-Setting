@@ -57,7 +57,8 @@ class SEResult(Result):
         )
 
         # Overlaps
-        self.__dict__.update(overlaps.__dict__)
+        self.__dict__.update(overlaps._overlaps)
+        self.__dict__.update(overlaps._hat_overlaps)
 
         # Angle
         self.angle: float = self.m / np.sqrt((self.q) * data_model.ρ)

@@ -394,4 +394,4 @@ def var_func(task, overlaps, data_model, slice_from=None, slice_to=None):
         * np.mean(data_model.spec_FTerm[slice_from:slice_to] / Lambda)
     )
 
-    return m, q, sigma, A, P, F
+    return {"m": m, "q": q, "sigma": sigma, "A": A, "P": P, "F": F}
