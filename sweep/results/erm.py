@@ -1,4 +1,5 @@
 from erm.problems.problems import ProblemType
+from erm.problems.problems import ADVERSARIAL_ERROR_MAP, BOUNDARY_LOSS_MAP
 from util.task import Task
 from model.dataset import DataSet
 from model.data import DataModel
@@ -6,10 +7,7 @@ from state_evolution.overlaps import Overlaps
 from erm.prediction import predict_erm
 from erm.errors import (
     error,
-    adversarial_error,
-    adversarial_error_teacher,
     fair_adversarial_error_erm,
-    compute_boundary_loss,
     logistic_training_loss,
 )
 from state_evolution.observables import (
@@ -61,7 +59,7 @@ class ERMResult(Result):
             [
                 (
                     eps,
-                    adversarial_error(
+                    ADVERSARIAL_ERROR_MAP[task.erm_problem_type](
                         data.y_test, data.X_test, weights, eps, data_model.Σ_ν
                     ),
                 )
@@ -75,17 +73,6 @@ class ERMResult(Result):
                     adv_error - self.generalization_error_erm,
                 )
                 for eps, adv_error in self.adversarial_generalization_errors
-            ]
-        )
-        self.adversarial_generalization_errors_teacher: np.ndarray = np.array(
-            [
-                (
-                    eps,
-                    adversarial_error_teacher(
-                        data.y_test, data.X_test, weights, data.θ, eps, data_model
-                    ),
-                )
-                for eps in task.test_against_epsilons
             ]
         )
         self.adversarial_generalization_errors_overlap: np.ndarray = np.array(
@@ -121,14 +108,14 @@ class ERMResult(Result):
         self.training_error: float = error(data.y, yhat_gd_train)
 
         # boundary loss
-        self.boundary_loss_train: float = compute_boundary_loss(
+        self.boundary_loss_train: float = BOUNDARY_LOSS_MAP[task.erm_problem_type](
             data.y, data.X, task.epsilon, data_model.Σ_δ, weights, task.lam
         )
         self.boundary_loss_test_es: np.ndarray = np.array(
             [
                 (
                     eps,
-                    compute_boundary_loss(
+                    BOUNDARY_LOSS_MAP[task.erm_problem_type](
                         data.y_test,
                         data.X_test,
                         eps,

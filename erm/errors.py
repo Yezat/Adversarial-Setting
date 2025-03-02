@@ -6,7 +6,7 @@ def error(y, yhat):
     return 0.25 * np.mean((y - yhat) ** 2)
 
 
-def adversarial_error(y, Xtest, w_gd, epsilon, Σ_ν):
+def adversarial_error_fgm(y, Xtest, w_gd, epsilon, Σ_ν):
     d = Xtest.shape[1]
     wSw = w_gd.dot(Σ_ν @ w_gd)
     nww = np.sqrt(w_gd @ w_gd)
@@ -16,7 +16,36 @@ def adversarial_error(y, Xtest, w_gd, epsilon, Σ_ν):
     )
 
 
+def adversarial_error(y, Xtest, w_gd, epsilon, Σ_ν):
+    d = Xtest.shape[1]
+    wSw = w_gd.dot(Σ_ν @ w_gd)
+
+    return error(
+        y, np.sign(Xtest @ w_gd / np.sqrt(d) - y * epsilon / np.sqrt(d) * np.sqrt(wSw))
+    )
+
+
 def compute_boundary_loss(y, Xtest, epsilon, Σ_δ, w_gd, l2_reg_strength):
+    d = Xtest.shape[1]
+    wSw = w_gd.dot(Σ_δ @ w_gd)
+
+    optimal_attack = epsilon / np.sqrt(d) * np.sqrt(wSw)
+
+    raw_prediction = Xtest @ w_gd / np.sqrt(d)
+
+    # compute y * raw_prediction elementwise and sum over all samples
+    y_raw_prediction = y * raw_prediction
+    y_raw_prediction_sum = y_raw_prediction.sum()
+
+    boundary_loss = y_raw_prediction_sum * optimal_attack * l2_reg_strength
+
+    # assert boundary_loss to be a scalar
+    assert np.isscalar(boundary_loss)
+
+    return boundary_loss
+
+
+def compute_boundary_loss_fgm(y, Xtest, epsilon, Σ_δ, w_gd, l2_reg_strength):
     d = Xtest.shape[1]
     wSw = w_gd.dot(Σ_δ @ w_gd)
     nww = np.sqrt(w_gd @ w_gd)
@@ -35,23 +64,6 @@ def compute_boundary_loss(y, Xtest, epsilon, Σ_δ, w_gd, l2_reg_strength):
     assert np.isscalar(boundary_loss)
 
     return boundary_loss
-
-
-def adversarial_error_teacher(y, Xtest, w_gd, teacher_weights, epsilon, data_model):
-    if teacher_weights is None:
-        return None
-
-    d = Xtest.shape[1]
-
-    nww = np.sqrt(w_gd @ w_gd)
-
-    tSw = teacher_weights.dot(data_model.Σ_ν @ w_gd)  # shape (d,)
-
-    y_attacked_teacher = np.sign(
-        Xtest @ teacher_weights / np.sqrt(d) - y * epsilon / np.sqrt(d) * tSw / nww
-    )
-
-    return error(y_attacked_teacher, y)
 
 
 def fair_adversarial_error_erm(
