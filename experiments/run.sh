@@ -10,10 +10,9 @@
 #SBATCH --time=24:00:00
 
 module purge
-module load gcc openmpi python/3.10.4
+module load gcc openmpi python/3.11.0
 source /home/ktanner/venvs/adv/bin/activate
 
-srun --mpi pmi2 python3 ./create_data_model.py 'sweep_experiment.json'
-srun --mpi=pmi2 python3 ./sweep.py 'sweep_experiment.json'
+srun --mpi=pmi2 python3 ./sweep.py --file sweep_experiment.json
 
 deactivate

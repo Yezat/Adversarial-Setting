@@ -65,6 +65,3 @@ def test_generate_data():
         10000,
     ), f"Expected shape {(10000,)}, but got {dataset.y_test.shape}"
     assert dataset.θ.shape == (d,), f"Expected shape {(d,)}, but got {dataset.θ.shape}"
-
-    # TODO add tests for the covariance matrices to match Σ_x.
-    # TODO add tests for the label y

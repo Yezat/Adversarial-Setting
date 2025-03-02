@@ -235,7 +235,6 @@ def master(num_processes, experiment) -> None:
     directory = Path("results") / experiment.name
     directory.mkdir(parents=True, exist_ok=True)
 
-    # TODO, eventually just saving the dataframe should be enough...
     with open(directory / "erm_results.json", "w") as f:
         f.write(json.dumps(erm_results, cls=NumpyEncoder))
 

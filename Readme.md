@@ -10,7 +10,7 @@ Once you've created an `experiment.json` file and you would like to run the expe
 
 mpiexec -n 5 python sweep/run_sweep.py --file experiment.json
 ```
-Alternatively, in a cluster environment, it is possible to use a `run.sh` file. TODO
+Alternatively, in a cluster environment, it is possible to use a `run.sh` file. There's an example in experiments/run.sh.
 
 The experiments on real data have been performed in the `pca_experiments.ipynb` notebook.
 

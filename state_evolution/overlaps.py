@@ -14,7 +14,7 @@ def damped_update(new, old, damping) -> float:
     return damping * new + (1 - damping) * old
 
 
-class Overlaps:  # TODO, shall this be a dataclass? Then we can improve also the log_overlaps method
+class Overlaps:
     def __init__(self, overlaps: Iterable[str], hat_overlaps: Iterable[str]) -> None:
         super().__setattr__("_overlaps", {k: INITIAL_CONDITION for k in overlaps})
         super().__setattr__("_hat_overlaps", {k: 0 for k in hat_overlaps})

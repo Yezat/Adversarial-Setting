@@ -155,5 +155,3 @@ def test_k_features_data_model():
     assert np.array_equal(
         data_model.Σ_ν, expected_Σ_ν
     ), f"Expected {expected_Σ_ν}, but got {data_model.Σ_ν}"
-
-    # TODO, add tests for the rest of the matrices
