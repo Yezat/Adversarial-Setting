@@ -281,7 +281,7 @@ def _P_hat_integrand(
 
     m_derivative = -(z_star - w) / sigma
 
-    m_derivative *= -y * epsilon * 0.5 / np.sqrt(P) / np.sqrt(N)
+    m_derivative *= -y * epsilon / np.sqrt(N)
 
     return z_0 * m_derivative * gaussian(xi, 0, 1)
 
