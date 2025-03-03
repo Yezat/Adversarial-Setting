@@ -50,19 +50,18 @@ def preprocessing(coef, X, y, lam, epsilon, problem_type: ProblemType):
         )
     w0[: coef.size] = coef
 
-    if problem_type == ProblemType.Logistic:
-        mask = y == 1
-        y_bin = np.ones(y.shape, dtype=X.dtype)
-        y_bin[~mask] = 0.0
-        target = y_bin
-    elif (
-        problem_type == ProblemType.PerturbedLogistic or ProblemType.CoefficientLogistic
-    ):
-        target = y
-    else:
-        raise Exception(
-            f"Preprocessing not implemented for problem type {problem_type}"
-        )
+    match problem_type:
+        case ProblemType.Logistic | ProblemType.LogisticFGM:
+            mask = y == 1
+            y_bin = np.ones(y.shape, dtype=X.dtype)
+            y_bin[~mask] = 0.0
+            target = y_bin
+        case ProblemType.PerturbedLogistic | ProblemType.CoefficientLogistic:
+            target = y
+        case _:
+            raise Exception(
+                f"Preprocessing not implemented for problem type {problem_type}"
+            )
 
     return w0, X, target, lam, epsilon
 
