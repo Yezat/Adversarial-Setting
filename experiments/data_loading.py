@@ -19,6 +19,7 @@ LIST_COLUMNS_SE = [
     "data_model_adversarial_test_errors",
     "gamma_robustness_es",
     "boundary_errors",
+    "fair_error",
 ]
 
 KEYS = ["alpha", "epsilon", "tau", "lam", "epsilon_g", "data_model_name"]

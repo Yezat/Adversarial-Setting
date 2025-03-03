@@ -127,6 +127,14 @@ class SEResult(Result):
         )
 
         if task.se_problem_type == SEProblemType.LogisticFGM:
-            self.fair_error = fair_adversarial_error_overlaps(
-                overlaps, data_model, task.gamma_fair_error, task.epsilon
+            self.fair_error = np.array(
+                [
+                    (
+                        eps,
+                        fair_adversarial_error_overlaps(
+                            overlaps, data_model, task.gamma_fair_error, eps
+                        ),
+                    )
+                    for eps in task.test_against_epsilons
+                ]
             )
