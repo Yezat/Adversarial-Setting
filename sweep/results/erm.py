@@ -1,5 +1,6 @@
 from erm.problems.problems import ProblemType
 from erm.problems.problems import ADVERSARIAL_ERROR_MAP, BOUNDARY_LOSS_MAP
+from state_evolution.constants import SEProblemType
 from util.task import Task
 from model.dataset import DataSet
 from model.data import DataModel
@@ -43,6 +44,10 @@ class ERMResult(Result):
         overlaps.q = self.Q
         overlaps.P = self.P
         overlaps.F = self.F
+
+        if task.se_problem_type == SEProblemType.LogisticFGM:
+            self.N = weights.dot(weights) / task.d
+            overlaps.N = self.N
 
         # Angle
         self.angle: float = self.m / np.sqrt(self.Q * self.ρ)
