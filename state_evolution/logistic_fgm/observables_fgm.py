@@ -60,7 +60,7 @@ def _training_loss_integrand(
 
     proximal = evaluate_proximal(sigma, y, epsilon * P / np.sqrt(N), w)
 
-    loss = log1pexp_numba(-y * proximal + epsilon * P)
+    loss = log1pexp_numba(-y * proximal + epsilon * P / np.sqrt(N))
 
     return z_0 * loss * gaussian(xi, 0, 1)
 

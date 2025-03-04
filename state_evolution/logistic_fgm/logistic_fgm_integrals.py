@@ -51,16 +51,16 @@ def logistic_m_hat_func(
 ):
     Iplus = quad(
         lambda xi: _m_hat_integrand(
-            xi,
-            1,
-            overlaps.m,
-            overlaps.q,
-            ρ,
-            tau,
-            epsilon,
-            overlaps.P,
-            overlaps.N,
-            overlaps.sigma,
+            xi=xi,
+            y=1,
+            m=overlaps.m,
+            q=overlaps.q,
+            ρ=ρ,
+            tau=tau,
+            epsilon=epsilon,
+            P=overlaps.P,
+            N=overlaps.N,
+            sigma=overlaps.sigma,
         ),
         -int_lims,
         int_lims,
@@ -468,6 +468,7 @@ def var_func(
         task.lam * data_model.spec_Σ_ω[slice_from:slice_to]
         + overlaps.sigma_hat * data_model.spec_Σ_x[slice_from:slice_to]
         + overlaps.P_hat * data_model.spec_Σ_δ[slice_from:slice_to]
+        + overlaps.N_hat * np.ones(slice_to - slice_from)
     )
     H = (
         data_model.spec_Σ_x[slice_from:slice_to] * overlaps.q_hat
