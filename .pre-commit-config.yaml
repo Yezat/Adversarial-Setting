@@ -8,13 +8,3 @@ repos:
       - id: ruff
       # Run the formatter.
       - id: ruff-format
-
-
-  - repo: local
-    hooks:
-      - id: version-increment
-        name: Increment version
-        entry: bash hooks/increment_version.sh
-        language: system
-        stages: [commit]
-

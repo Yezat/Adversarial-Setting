@@ -1,0 +1,42 @@
+[project]
+name = "adversarial-setting"
+version = "0.0.5"
+requires-python = ">=3.11"
+description = "Code for the paper 'A High Dimensional Statistical Model for Adversarial Training: Geometry and Trade-Offs'"
+readme = "README.md"
+authors = [
+    { name = "Kasimir Tanner", email = "kasimir.tanner@gmail.com" },
+    { name = "Matteo Vilucchio", email = "matteo.vilucchio@epfl.ch" }
+]
+keywords = [
+    "State Evolution", "ERM", 
+]
+dependencies = [
+    "mpi4py==4.0.2",
+    "numba==0.61.0",
+    "numpy==1.26.4",
+    "polars==1.22.0",
+    "scikit_learn==1.6.1",
+    "scipy==1.15.1",
+    "tqdm==4.67.1",
+    "ipykernel==6.29.5",
+    "argparse==1.4.0",
+    "setuptools==75.8.0",
+    "cython==3.0.12",
+    "wheel==0.45.1",
+    "matplotlib==3.10.0",
+]
+
+[build-system]
+requires = ["setuptools", "wheel", "cython"]
+build-backend = "setuptools.build_meta"
+
+
+[project.optional-dependencies]
+dev = ["ruff", "pre-commit", "pytest"]
+docs = ["mkdocs", "mkdocstrings"]
+
+[project.urls]
+HomePage = "https://arxiv.org/abs/2402.05674"
+repository = "https://github.com/Yezat/TPIV---Logistic-Classification"
+
